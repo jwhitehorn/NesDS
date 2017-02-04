@@ -4,11 +4,20 @@
 
 //#define DTCM 0x0b000000
 
+#ifdef ARM9
+#ifndef common_ipc
+#define common_ipc
+
+#include "../common/common.h"
+
+#endif
+#endif
+
 #define NES_RAM nes_region
 #define NES_SRAM NES_RAM + 0x800
 //nes_region
 #define MAX_IPS_SIZE 0x80000		//actually, the ips file won't be larger than 512kB.
-#define ROM_MAX_SIZE 0x318000
+#define ROM_MAX_SIZE 0x200000 //0x318000 //kills dsnifi (wifi mode)
 #define MAXFILES 1024
 
 #define VRAM_ABCD (*(vu32*)0x4000240)
@@ -17,6 +26,7 @@
 
 #undef IPC		//IPC_* also in equates.h, keep both updated
 #define IPC ((u8 *)ipc_region)
+
 #define IPC_TOUCH_X	(*(vu32*)(IPC+0))
 #define IPC_TOUCH_Y	(*(vu32*)(IPC+4))
 #define IPC_KEYS	(*(vu32*)(IPC+8))
@@ -30,7 +40,7 @@
 #define IPC_MAPPER (*(volatile int *)(IPC+48))		//nes rom mapper
 #define IPC_PCMDATA		(unsigned char *)(IPC+128)	//used for raw pcm.
 #define IPC_APUWRITE ((unsigned int *)(IPC+512))		//apu write start
-#define IPC_AUDIODATA ((unsigned int *)(IPC+4096 + 512))	//audio data...
+#define IPC_AUDIODATA ((unsigned int *)(IPC+4096 + 512))	//audio data...	/unused
 
 //not implemented yet.
 
@@ -38,6 +48,8 @@
 #define KEY_TOUCH 0x1000
 #define KEY_CLOSED 0x2000
 
+//conflicts with DSWIFI. check IPC common.h for new defs
+/*
 #define FIFO_WRITEPM 1
 #define FIFO_APU_PAUSE 2
 #define FIFO_UNPAUSE 3
@@ -45,6 +57,7 @@
 #define FIFO_APU_RESET 5
 #define FIFO_HIBERNATE 6
 #define FIFO_SOUND_RESET 7
+*/
 
 #ifdef ARM9
 
@@ -216,7 +229,7 @@ extern void ntsc_pal_reset();
 
 //multi.c
 extern void initNiFi();
-extern void do_multi();
+extern bool do_multi();
 extern int nifi_cmd;
 extern int nifi_stat;
 extern int nifi_menu();
@@ -318,5 +331,5 @@ int do_decompression(const char *inname, const char *outname);
 #define ALLPIXELON 0x80000 //on or off state of all_pix_show
 #define NSFFILE 0x100000 //on or off state of all_pix_show
 #else
-extern int ipc_region;
+extern int ipc_region;	//already taken by C PRE-PROCESSOR. Will cause compiler errors if uncommented
 #endif

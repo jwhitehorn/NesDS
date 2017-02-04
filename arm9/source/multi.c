@@ -1,178 +1,269 @@
-#include <nds.h>
-#include <dswifi9.h>
-#include <stdlib.h>
-#include <string.h>
+#include "nifi.h"
+
+#include "../../../common/dsregs.h"
+#include "../../../common/common.h"
+#include "wifi_arm9.h"
+#include "multi.h"
+#include "dswifi9.h"
+#include "wifi_shared.h"
+#include "wifi_arm9.h"
+#include "utils.h"
 #include "ds_misc.h"
 #include "c_defs.h"
 #include "menu.h"
+#include "arm9main.h"
 
-#include "dswifi9.h"
-#include "wireless/wifi_arm9.h"
+#include "client_http_handler.h"
+#include "http_utils.h"
 
-char data[4096];
-static const char nesds[32]		= {0xB2, 0xD1, 'n', 'e', 's', 'd', 's', 0};
-static const char nfconnect[32]	= {0xB2, 0xD1, 'c', 'o', 'n', 'e', 'd', 0};
-static char nfcrc[32]				= {0xB2, 0xD1, 0x81, 0, 0, 0};
+#include <nds.h>
+#include "sys/socket.h"
+#include "netinet/in.h"
+#include <netdb.h>
+#include <ctype.h>
+#include <fat.h>
+#include <stdarg.h>
+#include <string.h>
+#include <unistd.h>
+#include <fat.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <string.h>
+#include <dirent.h>
+#include <nds/memory.h>
+#include <nds/ndstypes.h>
+#include <nds/memory.h>
+#include <nds/bios.h>
+#include <nds/system.h>
+#include <nds/arm9/math.h>
+#include <nds/arm9/video.h>
+#include <nds/arm9/videoGL.h>
+#include <nds/arm9/trig_lut.h>
+#include <nds/arm9/sassert.h>
 
-// nfdata[3..6]	= nifi_cmd
-// 7..8			= framecount	used by guest, sent by host
-// 9..10		= player1 keys  sent by host
-// 11.12		= player2 keys  sent by guest, re-sent by guest
-// 13.77		= hosts' key_buf... needed by guest when the recent packages were lost.
-static char nfdata[128]			= {0xB2, 0xD1, 0x82, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-//static char nfsync[]			= {0xB2, 0xD1, 0x83, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};		//sync the memory....
+#include "interrupts/fifo_handler.h"
+#include "interrupts/interrupts.h"
+#include "touch_ipc.h"
+#include "../../common/common.h"
+
 
 //0 not ready, 1 act as a host and waiting, 2 act as a guest and waiting, 3 connecting, 4 connected, 5 host ready, 6 guest ready
 int nifi_stat = 0;
 int nifi_cmd = 0;
-int nifi_keys = 0;		//holds the keys for players.
-int new_nkeys = 0;		//holds the next key for refreshing.
-int old_nkeys = 0;		//if no new_keys coming, use the old_keys
+int nifi_keys = 0;		//holds the keys for players. player1 included
 int plykeys1 = 0;		//player1
 int plykeys2 = 0;		//player2
-int new_framecount = 0;	//used by the guest for syncing.
-int guest_framecount = 0;	//used by the guest for syncing.
-int old_guest_framecount = 0;	//used by the guest for syncing.
-static int framecount = 0;
 
-char key_maps[16];			//for guest to record the key_buf state.
-int key_buf[16];			//for guest to record the keys...
+int host_vcount = 0;		//host generated REG_VCOUNT
+int guest_vcount = 0;		//guest generated REG_VCOUNT
 
-int frame_stuck;		//ont player should not be stuck when the other failed to comm...
+int host_framecount = 0;
+int guest_framecount = 0;
 
-void deep_reset()
+int nifi_keys_sync;	//(guestnifikeys & hostnifikeys)
+
+
+//memcpy ( void * destination, const void * source, size_t num );
+inline void sendcmd(u8 * databuf_src)
 {
-	//unsigned char *memp = (unsigned char *)NES_RAM;
-	//memset(memp, 0, 0x7800);
-	memset(key_buf, 0, 16 * 4);
-	memset(key_maps, 0, 16);
-}
+	//detect nifi- or wifi mode
+	//if(MyIPC->dswifiSrv.dsnwifisrv_stat == ds_netplay_host){
+	
+	//0-1-2 ID:
+	memcpy((u8*)(databuf_src + 3), (u8*)&nifi_cmd, sizeof(nifi_cmd));
+	
+	int framesize = 0;
+	
+	if(MyIPC->dswifiSrv.dsnwifisrv_mode == dswifi_nifimode){
 
-
-//void * memcpy ( void * destination, const void * source, size_t num );
-void sendcmd()
-{
-	memcpy(nfdata + 3, &nifi_cmd, 4);
-	if(nifi_stat == 5) {	//host
-		memcpy(nfdata + 9, &new_nkeys, 4);
-		memcpy(nfdata + 7, &new_framecount, 2);
-		memcpy(nfdata + 13, key_buf, 4*16);
-		Wifi_RawTxFrame(78, 0x0014, (unsigned short *)nfdata);
-	} else {
-		plykeys2 = IPC_KEYS & MP_KEY_MSK;
-		memcpy(nfdata + 7, &framecount, 2);
-		memcpy(nfdata + 11, &plykeys2, 2);
-		Wifi_RawTxFrame(14, 0x0014, (unsigned short *)nfdata);
+		if(nifi_stat == 5) {	//host
+			host_vcount = (int)(REG_VCOUNT&0xff);
+			
+			memcpy((u8*)(databuf_src + 3 + sizeof(nifi_cmd)), (u32*)&host_vcount, sizeof(host_vcount));
+			
+			//new: send nifi_keys overwifi , not compatible with stock nesdsnifi
+			memcpy((u8*)(databuf_src + 3 + sizeof(nifi_cmd) + sizeof(host_vcount)), &plykeys1, sizeof(plykeys1));
+			
+			//new: send host framecount
+			memcpy((u8*)(databuf_src + 3 + sizeof(nifi_cmd) + sizeof(host_vcount) + sizeof(plykeys1)), &host_framecount, sizeof(host_framecount));
+			
+			framesize = 3 + sizeof(nifi_cmd) + sizeof(host_vcount) + sizeof(plykeys1) + sizeof(host_framecount);
+			
+		} 
+		else if(nifi_stat == 6){
+			memcpy((u8*)(databuf_src + 3 + sizeof(nifi_cmd)), &plykeys2, sizeof(plykeys2));
+			
+			//update guest VCOUNT here for host sync
+			guest_vcount = (int)(REG_VCOUNT&0xff);
+			
+			memcpy((u8*)(databuf_src + 3 + sizeof(nifi_cmd) + sizeof(plykeys2)), (u32*)&guest_vcount, sizeof(guest_vcount));
+			
+			memcpy((u8*)(databuf_src + 3 + sizeof(nifi_cmd) + sizeof(plykeys2) + sizeof(guest_vcount)), &nifi_keys_sync, sizeof(nifi_keys_sync));
+			
+			//new: send guest framecount
+			memcpy((u8*)(databuf_src + 3 + sizeof(nifi_cmd) + sizeof(plykeys2) + sizeof(guest_vcount) + sizeof(nifi_keys_sync)), &guest_framecount, sizeof(guest_framecount));
+			
+			framesize = 3 + sizeof(nifi_cmd) + sizeof(plykeys2) + sizeof(guest_vcount) + sizeof(nifi_keys_sync) + sizeof(guest_framecount);
+		}
+		
 	}
-}
-
-
-void getcmd()
-{
-	memcpy(&nifi_cmd, data + 35, 4);
-	if(nifi_stat == 5) {	//host
-		memcpy(&plykeys2, data + 43, 2);
-		memcpy(&guest_framecount, data + 39, 2);
-	} else {
-		int i;
-		char *kbufp = data + 45;
-		memcpy(&new_framecount, data + 39, 2);
-		memcpy(&new_nkeys, data + 41, 4);
-		key_buf[(new_framecount >> 1) &15] = new_nkeys;
-		key_maps[(new_framecount >> 1) &15] = 1;			//the key is valid.
-		for(i = framecount + 1; i < new_framecount; i+=2) {
-			int tmp = (i >> 1) & 15;
-			memcpy(&key_buf[tmp], kbufp + tmp * 4, 4);
-			key_maps[tmp] = 1;
+	else if(MyIPC->dswifiSrv.dsnwifisrv_mode == dswifi_wifimode){
+		switch(MyIPC->dswifiSrv.dsnwifisrv_stat){
+			
+			//#last:connected!
+			case(ds_netplay_host):{
+				host_vcount = (int)(REG_VCOUNT&0xff);
+			
+				memcpy((u8*)(databuf_src + 3 + sizeof(nifi_cmd)), (u32*)&host_vcount, sizeof(host_vcount));
+				
+				//new: send nifi_keys overwifi , not compatible with stock nesdsnifi
+				memcpy((u8*)(databuf_src + 3 + sizeof(nifi_cmd) + sizeof(host_vcount)), &plykeys1, sizeof(plykeys1));
+				
+				//new: send host framecount
+				memcpy((u8*)(databuf_src + 3 + sizeof(nifi_cmd) + sizeof(host_vcount) + sizeof(plykeys1)), &host_framecount, sizeof(host_framecount));
+				
+				framesize = 3 + sizeof(nifi_cmd) + sizeof(host_vcount) + sizeof(plykeys1) + sizeof(host_framecount);
+				
+			}break;
+			
+			case(ds_netplay_guest):{
+				memcpy((u8*)(databuf_src + 3 + sizeof(nifi_cmd)), &plykeys2, sizeof(plykeys2));
+				
+				//update guest VCOUNT here for host sync
+				guest_vcount = (int)(REG_VCOUNT&0xff);
+				
+				memcpy((u8*)(databuf_src + 3 + sizeof(nifi_cmd) + sizeof(plykeys2)), (u32*)&guest_vcount, sizeof(guest_vcount));
+				
+				memcpy((u8*)(databuf_src + 3 + sizeof(nifi_cmd) + sizeof(plykeys2) + sizeof(guest_vcount)), &nifi_keys_sync, sizeof(nifi_keys_sync));
+				
+				//new: send guest framecount
+				memcpy((u8*)(databuf_src + 3 + sizeof(nifi_cmd) + sizeof(plykeys2) + sizeof(guest_vcount) + sizeof(nifi_keys_sync)), &guest_framecount, sizeof(guest_framecount));
+				
+				framesize = 3 + sizeof(nifi_cmd) + sizeof(plykeys2) + sizeof(guest_vcount) + sizeof(nifi_keys_sync) + sizeof(guest_framecount);
+			}break;
 		}
 	}
-}
-
-void Handler(int packetID, int readlength)
-{
-	Wifi_RxRawReadPacket(packetID, readlength, (unsigned short *)data);
-
-	// Lazy test to see if this is our packet.
-	if (data[32] == 0xB2 && data[33] == 0xD1)  {//a packet from another ds.
-		switch(nifi_stat) {
-			case 0:
-				return;
-			case 1:			//love this.
-				if(strncmp(data + 34, nesds + 2, 8) == 0) {
-					nifi_stat = 3;
-				}
-				break;
-			case 2:			//love this.
-				if(strncmp(data + 34, nfconnect + 2, 8) == 0) {
-					nifi_stat = 4;
-				}
-				break;
-			case 3:
-				if(data[34] == 0x81) {		//Check the CRC. Make sure that both players are using the same game.
-					int remotecrc = (data[35] | (data[36] << 8));
-					if(debuginfo[17] == remotecrc) {	//ok. same game
-						nifi_stat = 5;
-						nifi_cmd |= MP_CONN;
-						sendcmd();
-						hideconsole();
-						NES_reset();
-						deep_reset();
-						new_nkeys = 0;
-						nifi_keys = 0;
-						plykeys1 = 0;
-						plykeys2 = 0;
-						framecount = 0;
-						new_framecount = 0;
-						guest_framecount = 0;
-						global_playcount = 0;
-						joyflags &= ~AUTOFIRE;
-						__af_st = __af_start;
-						menu_game_reset();	//menu is closed.
-					} else {		//bad crc. disconnect the comm.
-						nifi_stat = 0;
-						nifi_cmd &= ~MP_CONN;
-						sendcmd();
-					}
-				}
-				break;
-			case 4:
-				if(data[34] == 0x82) {
-					getcmd();
-					if(nifi_cmd & MP_CONN) {	//CRC ok, get ready for multi-play.
-						nifi_stat = 6;
-						hideconsole();
-						NES_reset();
-						deep_reset();
-						new_nkeys = 0;
-						nifi_keys = 0;
-						plykeys1 = 0;
-						plykeys2 = 0;
-						framecount = 0;
-						new_framecount = 0;
-						guest_framecount = 0;
-						global_playcount = 0;
-						joyflags &= ~AUTOFIRE;
-						__af_st = __af_start;
-						menu_game_reset();	//menu is closed.
-					} else {					//CRC error, the both sides should choose the some game.
-						nifi_stat = 0;
-					}
-				}
-				break;
-			case 5:						//as a host, and receiving the package from guest.
-				getcmd();
-				break;
-			case 6:						//update player1's joystate
-				getcmd();
-				break;
+	
+	//coto: generate crc per nifi frame so we dont end up with corrupted data.
+	volatile u16 crc16_frame = swiCRC16	(	0xffff, //uint16 	crc,
+		databuf_src,
+		(framesize)		//cant have this own crc here
+		);
+	
+	*(u16*)(databuf_src + framesize)	= crc16_frame;
+	framesize = framesize + sizeof(crc16_frame);
+	
+	switch(MyIPC->dswifiSrv.dsnwifisrv_mode){
+		case dswifi_nifimode:{
+			Wifi_RawTxFrame_NIFI(framesize , 0x0014, (unsigned short *)databuf_src);
 		}
+		break;
+		case dswifi_wifimode:{
+			Wifi_RawTxFrame_WIFI(framesize , databuf_src);
+		}
+		break;
 	}
+	
 }
 
-void bug_DC_FlushAll()
+
+inline void getcmd(u8 * databuf_src)
 {
-	DC_FlushAll();
+	
+	switch(MyIPC->dswifiSrv.dsnwifisrv_mode){
+		case dswifi_nifimode:{
+			int frame_hdr_detected_size = frame_header_size;	//nifi raw only frame has this header
+			int offset_shared = frame_hdr_detected_size + 3;	//recv data is past first 32bytes of data[]
+			
+			//data buffer has come from RX handler already
+			memcpy((u8*)&nifi_cmd, (u8*)(databuf_src + offset_shared), sizeof(nifi_cmd));
+			
+			if(nifi_stat == 5) {	//host
+			
+				memcpy((u8*)&plykeys2, (u8*)(databuf_src + offset_shared + sizeof(nifi_cmd)), sizeof(plykeys2));
+				
+				//get guest VCOUNT
+				memcpy((u8*)&guest_vcount, (u8*)(databuf_src + offset_shared + sizeof(nifi_cmd) + sizeof(plykeys2)), sizeof(guest_vcount));
+				
+				//new: get nifi_sync keys from guest
+				memcpy((u8*)&nifi_keys_sync, (u8*)(databuf_src + offset_shared + sizeof(nifi_cmd) + sizeof(plykeys2) + sizeof(guest_vcount)), sizeof(nifi_keys_sync));
+				
+				//new: get guest_framecount from guest
+				memcpy((u8*)&guest_framecount, (u8*)(databuf_src + offset_shared + sizeof(nifi_cmd) + sizeof(plykeys2) + sizeof(guest_vcount) + sizeof(nifi_keys_sync)), sizeof(guest_framecount));
+				
+				offset_shared = offset_shared + sizeof(nifi_cmd) + sizeof(plykeys2) + sizeof(guest_vcount) + sizeof(nifi_keys_sync) + sizeof(guest_framecount);
+				
+			} 
+			else {	
+				//get host VCOUNT
+				memcpy((u8*)&host_vcount, (u8*)(databuf_src + offset_shared + sizeof(nifi_cmd)), sizeof(host_vcount));
+				
+				//new: recv plykeys1 overwifi , not compatible with stock nesdsnifi
+				memcpy((u8*)&plykeys1, (u8*)(databuf_src + offset_shared + sizeof(nifi_cmd) + sizeof(host_vcount)), sizeof(plykeys1));
+				
+				//new: get host framecount
+				memcpy((u32*)&host_framecount, (u8*)(databuf_src + offset_shared + sizeof(nifi_cmd) + sizeof(host_vcount) + sizeof(plykeys1)), sizeof(host_framecount));
+				//debuginfo[VBLS] = nesds_framecount = host_framecount;
+				
+				offset_shared = offset_shared + sizeof(nifi_cmd) + sizeof(host_vcount) + sizeof(plykeys1) + sizeof(host_framecount);
+			}
+			
+			//shared (guest & host vars here)
+			//u16 crc16_recv_frame = 0;
+			//memcpy(&crc16_recv_frame, data + offset_shared, sizeof(crc16_recv_frame));
+			
+		}
+		break;
+		case dswifi_wifimode:{
+			int frame_hdr_detected_size = 0;					//udp nifi frame has not this header
+			int offset_shared = frame_hdr_detected_size + 3;	//recv data is past first 32bytes of data[]
+			
+			//data buffer has come from RX handler already
+			memcpy((u8*)&nifi_cmd, (u8*)(databuf_src + offset_shared), sizeof(nifi_cmd));
+			
+			switch(MyIPC->dswifiSrv.dsnwifisrv_stat){
+				case(ds_netplay_host):{
+					memcpy((u8*)&plykeys2, (u8*)(databuf_src + offset_shared + sizeof(nifi_cmd)), sizeof(plykeys2));
+				
+					//get guest VCOUNT
+					memcpy((u8*)&guest_vcount, (u8*)(databuf_src + offset_shared + sizeof(nifi_cmd) + sizeof(plykeys2)), sizeof(guest_vcount));
+					
+					//new: get nifi_sync keys from guest
+					memcpy((u8*)&nifi_keys_sync, (u8*)(databuf_src + offset_shared + sizeof(nifi_cmd) + sizeof(plykeys2) + sizeof(guest_vcount)), sizeof(nifi_keys_sync));
+					
+					//new: get guest_framecount from guest
+					memcpy((u8*)&guest_framecount, (u8*)(databuf_src + offset_shared + sizeof(nifi_cmd) + sizeof(plykeys2) + sizeof(guest_vcount) + sizeof(nifi_keys_sync)), sizeof(guest_framecount));
+					
+					offset_shared = offset_shared + sizeof(nifi_cmd) + sizeof(plykeys2) + sizeof(guest_vcount) + sizeof(nifi_keys_sync) + sizeof(guest_framecount);
+					
+				}break;
+				
+				case(ds_netplay_guest):{
+					//get host VCOUNT
+					memcpy((u8*)&host_vcount, (u8*)(databuf_src + offset_shared + sizeof(nifi_cmd)), sizeof(host_vcount));
+					
+					//new: recv plykeys1 overwifi , not compatible with stock nesdsnifi
+					memcpy((u8*)&plykeys1, (u8*)(databuf_src + offset_shared + sizeof(nifi_cmd) + sizeof(host_vcount)), sizeof(plykeys1));
+					
+					//new: get host framecount
+					memcpy((u32*)&host_framecount, (u8*)(databuf_src + offset_shared + sizeof(nifi_cmd) + sizeof(host_vcount) + sizeof(plykeys1)), sizeof(host_framecount));
+					//debuginfo[VBLS] = nesds_framecount = host_framecount;
+					
+					offset_shared = offset_shared + sizeof(nifi_cmd) + sizeof(host_vcount) + sizeof(plykeys1) + sizeof(host_framecount);
+					
+				}break;
+				
+			}
+		}
+		break;
+	}
+	
+	
 }
+
+
 
 void Timer_10ms(void) {
 	Wifi_Timer(10);
@@ -189,107 +280,479 @@ void initNiFi()
 	if(1) {
 		//for secial configuration for wifi
 		irqDisable(IRQ_TIMER3);
-		irqSet(IRQ_TIMER3, Timer_10ms); // replace timer IRQ
+		//ori:irqSet(IRQ_TIMER3, Timer_10ms); // replace timer IRQ
+		irqSet(IRQ_TIMER3, Timer_50ms); // replace timer IRQ
 		// re-set timer3
 		TIMER3_CR = 0;
-		TIMER3_DATA = -(6553 / 5); // 6553.1 * 256 / 5 cycles = ~10ms;
+		//ori: TIMER3_DATA = -(6553 / 5); // 6553.1 * 256 / 5 cycles = ~10ms;
+		TIMER3_DATA = -6553; // 6553.1 * 256 cycles = ~50ms;
 		TIMER3_CR = 0x00C2; // enable, irq, 1/256 clock
 		irqEnable(IRQ_TIMER3);
 	}
 }
 
-//called by play()
-void do_multi()
+//coto: (sender) make do_multi return frame received
+inline bool do_multi()
 {
-	static int count = 0;
-	if(!nifi_stat) {
-		framecount = 0;
-		if(nifi_cmd & MP_NFEN) {
-			Wifi_DisableWifi();
-			nifi_cmd &= ~MP_NFEN;
-		}
-		return;
-	}
-
-	switch(nifi_stat) {
-		case 1:		//act as a host, waiting for another player.
-			if(!(nifi_cmd & MP_NFEN))
-				Wifi_EnableWifi();
-			nifi_cmd = MP_HOST | MP_NFEN;
-			break;	//waiting for interrupt.
-		case 2:		//act as a guest.
-			if(!(nifi_cmd & MP_NFEN))
-				Wifi_EnableWifi();
-			nifi_cmd = MP_NFEN;
-			if(count++ > 30) {			//send a flag every second to search a host.
-				Wifi_RawTxFrame(8, 0x0014, (unsigned short *)nesds);
-				count = 0;
-			}
-			break;
-		case 3:							//tell the guest that he should send the PRGCRC to the host
-			if(!(nifi_cmd & MP_NFEN))
-				Wifi_EnableWifi();
-			if(count++ > 30) {			//send a connected flag.
-				Wifi_RawTxFrame(8, 0x0014, (unsigned short *)nfconnect);
-				count = 0;
-			}
-			break;
-		case 4:
-			if(!(nifi_cmd & MP_NFEN))
-				Wifi_EnableWifi();
-			if(count++ > 30) {			//send a connected flag.
-				nfcrc[3] = debuginfo[17] &0xFF;
-				nfcrc[4] = (debuginfo[17] >> 8 )&0xFF;
-				Wifi_RawTxFrame(6, 0x0014, (unsigned short *)nfcrc);
-				count = 0;
-			}
-			break;
-		case 5:				//host should refresh the global keys.
-			if(framecount & 1)  {//refresh when a odd count.
-				new_nkeys = (IPC_KEYS & MP_KEY_MSK) | ((plykeys2 & MP_KEY_MSK) << 16);
-				nifi_keys = new_nkeys;
-				key_buf[(framecount >> 1) &15] = new_nkeys;
-				new_framecount = framecount;
-			}
-			sendcmd();
-			/*
-			if(framecount >= guest_framecount + 3) {
-				swiWaitForVBlank();			//host cound not be faster then host.
-			}*/
-			break;
-		case 6:				//guest...
-			//if(framecount & 1)  {//refresh when a even count.
+	//detect if WIFI mode is enabled, give priority then when ready (wifi set up between ds consoles is done) continue
+	if(MyIPC->dswifiSrv.dsnwifisrv_mode == dswifi_wifimode){
+		
+		//Handle sender (WIFI TX)
+		switch(MyIPC->dswifiSrv.dsnwifisrv_stat){		
+			
+			case(ds_netplay_host):{	//host should refresh the global keys.	
+				plykeys1 = IPC_KEYS & MP_KEY_MSK;
+			}break;
+			
+			case(ds_netplay_guest):{				//guest...
 				plykeys2 = IPC_KEYS & MP_KEY_MSK;
-				sendcmd();
-			//}
-			frame_stuck = 0;
-			while(framecount > new_framecount) {
-				swiWaitForVBlank();			//guest cound not be faster then host.
-				if(frame_stuck++ > 120) {	// 2 seconds for stuck!!!
-					nifi_stat = 0;
-					break;
-				}
-			}
-
-			if(key_maps[((framecount + 1) >> 1) & 15]) {
-				IPC_KEYS |= KEY_R;			//quick up!!!
-			}
-
-			frame_stuck = 0;
-			if(framecount & 1) {			//need to sync the keys.
-				while(!key_maps[(framecount >> 1) & 15]) {		//just wait....
-					swiDelay(10000);			//1ms delay, more or less.
-					if(frame_stuck++ > 2000) {   //2 second..
-						nifi_stat = 0;
-						break;
+				nifi_keys_sync	=	(plykeys1 & MP_KEY_MSK) | ((plykeys2 & MP_KEY_MSK) << 16);
+			}break;
+			
+		}
+		//requires all stages of dswifi_wifimode for init
+		sendcmd((u8*)&nfdata[0]);
+		
+		//Handle recv 
+		switch(MyIPC->dswifiSrv.dsnwifisrv_stat){
+			//#1 DS is not connected, serve any upcoming commands related to non connected to multi
+			//ds_searching_for_multi_servernotaware -> ds_wait_for_multi here
+			case(ds_searching_for_multi_servernotaware):{
+				
+				//Server UDP Handler listener
+				volatile unsigned long available_ds_server;
+				ioctl (client_http_handler_context.socket_id__multi_notconnected, FIONREAD, (u8*)&available_ds_server);
+				
+				volatile char incomingbuf[256];
+				volatile int datalen;
+				volatile int sain_len;
+				volatile struct sockaddr_in sender_server;
+				sain_len=sizeof(sender_server);
+				volatile char cmd[12];	//srv->ds command handler
+				if(available_ds_server > 0){
+					datalen=recvfrom(client_http_handler_context.socket_id__multi_notconnected,(u8*)incomingbuf,sizeof(incomingbuf),0,(struct sockaddr *)&sender_server,(int*)&sain_len);
+					if(datalen>0) {
+						//incomingbuf[datalen]=0;
+						memcpy((u8*)cmd,(u8*)incomingbuf,sizeof(cmd));	//cmd recv
 					}
 				}
-				nifi_keys = key_buf[(framecount >> 1) & 15];
-				key_maps[(framecount >> 1) & 15] = 0;			//clear the state.
+		
+				
+				//Server aware
+				if(strncmp((const char *)cmd, (const char *)"srvaware", 8) == 0){
+					
+					//server send other NDS ip format: cmd-ip-multi_mode- (last "-" goes as well!)
+					char **tokens;
+					int count, i;
+					//const char *str = "JAN,FEB,MAR,APR,MAY,JUN,JUL,AUG,SEP,OCT,NOV,DEC";
+					volatile char str[256];
+					memcpy ( (u8*)str, (u8*)incomingbuf, 256);
+
+					count = split ((const char*)str, '-', &tokens);
+					for (i = 0; i < count; i++) {
+						//then send back "dsaware"
+						//char outgoingbuf[64];
+						//sprintf(outgoingbuf,"%s",tokens[i]);
+						//sendto(client_http_handler_context.socket_id__multi_notconnected,outgoingbuf,strlen(outgoingbuf),0,(struct sockaddr *)&client_http_handler_context.server_addr,sizeof(client_http_handler_context.server_addr));
+					}
+					
+					//tokens[0];	//cmd
+					//tokens[1];	//external NDS ip to connect
+					//tokens[2];	//host or guest
+					
+					int host_mode = strncmp((const char*)tokens[2], (const char *)"host", 4); //host == 0
+					int guest_mode = strncmp((const char*)tokens[2], (const char *)"guest", 5); //guest == 0
+					
+					client_http_handler_context.socket_multi_listener=socket(AF_INET,SOCK_DGRAM,0);
+					int cmd=1;
+					cmd=ioctl(client_http_handler_context.socket_multi_listener,FIONBIO,&cmd); // set non-blocking port
+					
+					client_http_handler_context.socket_multi_sender=socket(AF_INET,SOCK_DGRAM,0);
+					
+					int optval = 1, len;
+					setsockopt(client_http_handler_context.socket_multi_sender, SOL_SOCKET, SO_BROADCAST, (char *)&optval, sizeof(optval));
+	
+					int LISTENER_PORT 	=	0;
+					int SENDER_PORT		=	0;
+					if(host_mode == 0){
+						LISTENER_PORT 	= 	(int)NDSMULTI_UDP_PORT_HOST;
+						SENDER_PORT		=	(int)NDSMULTI_UDP_PORT_GUEST;
+					}
+					else if(guest_mode == 0){
+						LISTENER_PORT 	= 	(int)NDSMULTI_UDP_PORT_GUEST;
+						SENDER_PORT		=	(int)NDSMULTI_UDP_PORT_HOST;
+					}
+					
+					//bind conn to LOCAL ip-port listener
+					memset((char *) &client_http_handler_context.sain_listener, 0, sizeof(client_http_handler_context.sain_listener));
+					client_http_handler_context.sain_listener.sin_family = AF_INET;
+					client_http_handler_context.sain_listener.sin_addr.s_addr=INADDR_ANY;	//local/any ip listen to desired port
+					//int atoi ( const char * str );
+					//int nds_multi_port = atoi((const char*)tokens[2]);
+					client_http_handler_context.sain_listener.sin_port = htons(LISTENER_PORT); //nds_multi_port
+					
+					
+					//NDS MULTI IP: No need to bind / sendto use
+					memset((char *) &client_http_handler_context.sain_sender, 0, sizeof(client_http_handler_context.sain_sender));
+					client_http_handler_context.sain_sender.sin_family = AF_INET;
+					client_http_handler_context.sain_sender.sin_addr.s_addr = INADDR_BROADCAST;//((const char*)"191.161.23.11");// //ip was reversed 
+					client_http_handler_context.sain_sender.sin_port = htons(SENDER_PORT); 
+					
+					struct sockaddr_in *addr_in2= (struct sockaddr_in *)&client_http_handler_context.sain_sender;
+					char *IP_string_sender = inet_ntoa(addr_in2->sin_addr);
+						
+					
+					//debug //WORKS SO FAR
+					//char buf[64];
+					//sprintf(buf,"DS1: %s - DS2: %s",IP_string_sender, (const char*)print_ip((u32)Wifi_GetIP()));
+					//consoletext(64*2-32,(char *)&buf[0],0);
+					
+					
+					
+					//bind ThisIP(each DS network hardware) against the current DS UDP port
+					if(bind(client_http_handler_context.socket_multi_listener,(struct sockaddr *)&client_http_handler_context.sain_listener,sizeof(client_http_handler_context.sain_listener))) {
+						char buf[64];
+						if(host_mode == 0){
+							sprintf(buf,"%s \n","[host]binding error");
+						}
+						else if(guest_mode == 0){
+							sprintf(buf,"%s \n","[guest]binding error");
+						}
+						consoletext(64*2-32,(char *)&buf[0],0);
+						close(client_http_handler_context.socket_multi_listener);
+						return 0;
+					}
+					else{
+						char buf[96];
+						char id[16];
+						//read IP from sock interface binded
+						struct sockaddr_in *addr_in= (struct sockaddr_in *)&client_http_handler_context.sain_listener;	//0.0.0.0 == (char*)print_ip((u32)Wifi_GetIP()) 
+						char *IP_string = inet_ntoa(addr_in->sin_addr);
+						
+						if(host_mode == 0){
+							sprintf(buf,"[host]binding OK MULTI: port [%d] IP: [%s]  \n",LISTENER_PORT, (const char*)print_ip((u32)Wifi_GetIP()));//(char*)print_ip((u32)Wifi_GetIP()));
+							sprintf(id,"[host]");
+							
+							//stop sending data, server got it already.
+							MyIPC->dswifiSrv.dsnwifisrv_stat = ds_netplay_host_servercheck;
+							//nifi_stat = 1;
+						}
+						else if(guest_mode == 0){
+							sprintf(buf,"[guest]binding OK MULTI: port [%d] IP: [%s]  \n",LISTENER_PORT, (const char*)print_ip((u32)Wifi_GetIP()));//(char*)print_ip((u32)Wifi_GetIP()));
+							sprintf(id,"[guest]");
+							//stop sending data, server got it already.
+							MyIPC->dswifiSrv.dsnwifisrv_stat = ds_netplay_guest_servercheck;
+							//nifi_stat = 2;
+						}
+						
+						//read IP from sock interface binded
+						//struct sockaddr_in *addr_in2= (struct sockaddr_in *)&client_http_handler_context.sain_sender;
+						//char *IP_string_sender = inet_ntoa(addr_in2->sin_addr);
+						
+						//char buf2[64];
+						//sprintf(buf2,"////////////////////////IP read from sender socket: %s",(const char *)IP_string_sender);
+						//consoletext(64*2-32,(char *)&buf2[0],0);
+						
+						//char buf2[64];
+						//sprintf(buf2,"////////////////////////MY IP: %s / Read from server: %s ",(char*)print_ip((u32)Wifi_GetIP()),(const char *)tokens[1]);
+						//consoletext(64*2-32,(char *)&buf2[0],0);
+						
+						//bind sender? does not work with UDP Datagram socket format (UDP basically)
+						/*
+						int ret = bind(client_http_handler_context.socket_multi_sender,(struct sockaddr *)&client_http_handler_context.sain_sender,sizeof(client_http_handler_context.sain_sender));
+						
+						if(ret == -1){
+							sprintf(buf,"%s \n","[SERVERNDS]binding error");
+							consoletext(64*2-32,(char *)&buf[0],0);
+						}
+						else if(ret == 0){
+							sprintf(buf,"%s \n","[SERVERNDS]binding OK");
+							consoletext(64*2-32,(char *)&buf[0],0);
+						}
+					
+					*/
+					}
+					
+					//debug //WORKS SO FAR
+					/*
+					char buf[64];
+					sprintf(buf,"DS1: %s - DS2: %s",IP_string_sender, (const char*)print_ip((u32)Wifi_GetIP()));
+					consoletext(64*2-32,(char *)&buf[0],0);
+					*/
+					
+					//void * memcpy ( void * destination, const void * source, size_t num );
+				}
+				
 			}
 			break;
-		default:
+			
+			//servercheck phase acknow
+			case(ds_netplay_host_servercheck):case(ds_netplay_guest_servercheck):{
+				/*
+				//Server aware
+				if(strncmp((const char *)cmd, (const char *)"debug", 5) == 0){
+					
+					//works on recv
+					char buf2[64];
+					sprintf(buf2,"////////////////////////debug cmd:%s",incomingbuf);
+					consoletext(64*2-32,(char *)&buf2[0],0);
+					
+				}
+				*/
+				
+				//Server UDP Handler listener
+				volatile unsigned long available_ds_server;
+				ioctl (client_http_handler_context.socket_id__multi_notconnected, FIONREAD, (u8*)&available_ds_server);
+				
+				volatile char incomingbuf[256];
+				volatile int datalen;
+				volatile int sain_len;
+				volatile struct sockaddr_in sender_server;
+				sain_len=sizeof(sender_server);
+				volatile char cmd[12];	//srv->ds command handler
+				if(available_ds_server > 0){
+					datalen=recvfrom(client_http_handler_context.socket_id__multi_notconnected,(u8*)incomingbuf,sizeof(incomingbuf),0,(struct sockaddr *)&sender_server,(int*)&sain_len);
+					if(datalen>0) {
+						//incomingbuf[datalen]=0;
+						memcpy((u8*)cmd,(u8*)incomingbuf,sizeof(cmd));	//cmd recv
+					}
+				}
+				
+				if(strncmp((const char *)cmd, (const char *)"dsconnect", 9) == 0){
+					
+					/*
+					//validate it is the same IP we binded to earlier
+					struct sockaddr_in *addr_in= (struct sockaddr_in *)&client_http_handler_context.sain_sender;
+					char *IP_string_ds_multi = inet_ntoa(addr_in->sin_addr);
+					
+					//server send other NDS ip format: dsconnect-IP- (last "-" goes as well!)
+					char **tokens;
+					int count, i;
+					//const char *str = "JAN,FEB,MAR,APR,MAY,JUN,JUL,AUG,SEP,OCT,NOV,DEC";
+					volatile char str[256];
+					memcpy ( (u8*)str, (u8*)incomingbuf, 256);
+
+					count = split ((const char*)str, '-', &tokens);
+					for (i = 0; i < count; i++) {
+						//then send back "dsaware"
+						//char outgoingbuf[64];
+						//sprintf(outgoingbuf,"%s",tokens[i]);
+						//sendto(client_http_handler_context.socket_id__multi_notconnected,outgoingbuf,strlen(outgoingbuf),0,(struct sockaddr *)&client_http_handler_context.server_addr,sizeof(client_http_handler_context.server_addr));
+					}
+					
+					//tokens[0];	//cmd
+					//tokens[1];	//IP from DS MULTI TO CONNECT(not ours)
+					*/
+					
+					int LISTENER_PORT 	=	0;
+					int SENDER_PORT		=	0;
+					if(MyIPC->dswifiSrv.dsnwifisrv_stat == ds_netplay_host_servercheck){
+						LISTENER_PORT 	= 	(int)NDSMULTI_UDP_PORT_HOST;
+						SENDER_PORT		=	(int)NDSMULTI_UDP_PORT_GUEST;
+					}
+					else if(MyIPC->dswifiSrv.dsnwifisrv_stat == ds_netplay_guest_servercheck){
+						LISTENER_PORT 	= 	(int)NDSMULTI_UDP_PORT_GUEST;
+						SENDER_PORT		=	(int)NDSMULTI_UDP_PORT_HOST;
+					}
+					
+					if(MyIPC->dswifiSrv.dsnwifisrv_stat == ds_netplay_host_servercheck){
+						
+						//works on recv
+						
+						char buf2[64];
+						sprintf(buf2,"//////////DSCONNECTED[HOST]-PORT:%d",LISTENER_PORT);
+						consoletext(64*2-32,(char *)&buf2[0],0);
+						
+						
+						MyIPC->dswifiSrv.dsnwifisrv_stat = ds_netplay_host;
+						nifi_stat = 5;
+					}
+					else if(MyIPC->dswifiSrv.dsnwifisrv_stat == ds_netplay_guest_servercheck){
+						
+						char buf2[64];
+						sprintf(buf2,"//////////DSCONNECTED[GUEST]-PORT:%d",LISTENER_PORT);
+						consoletext(64*2-32,(char *)&buf2[0],0);
+						
+						MyIPC->dswifiSrv.dsnwifisrv_stat = ds_netplay_guest;
+						nifi_stat = 6;
+					}
+					
+					close(client_http_handler_context.socket_id__multi_notconnected); //closer server socket to prevent problems
+					
+				}
+			}
 			break;
+			
+			//#last:connected!
+			//logic: recv data(256byte buf) from port
+			case(ds_netplay_host):case(ds_netplay_guest):{
+				
+				//DS-DS UDP Handler listener
+				volatile unsigned long available_ds_ds;
+				ioctl (client_http_handler_context.socket_multi_listener, FIONREAD, (u8*)&available_ds_ds);
+				
+				volatile int datalen2;
+				volatile u8 inputbuf[512];
+				volatile int sain_len2;
+				volatile struct sockaddr_in sender_ds;
+				sain_len2=sizeof(sender_ds);
+				
+				if(available_ds_ds > 0){
+				
+					datalen2=recvfrom(client_http_handler_context.socket_multi_listener,(u8*)inputbuf,sizeof(inputbuf),0,(struct sockaddr *)&sender_ds,(int*)&sain_len2);
+					if(datalen2>0) {
+						inputbuf[datalen2-1]=0;
+						
+						int framesize = 0;
+						int frame_hdr_size = 0;	//nifi has this header, wifi no
+						
+						switch(MyIPC->dswifiSrv.dsnwifisrv_stat){
+							//#last:connected!
+							case(ds_netplay_host):{	//host receives from guest
+								framesize = 3 + sizeof(nifi_cmd) + sizeof(plykeys2) + sizeof(guest_vcount) + sizeof(nifi_keys_sync) + sizeof(guest_framecount);
+							}break;
+							
+							case(ds_netplay_guest):{ //guest receives from host
+								framesize = 3 + sizeof(nifi_cmd) + sizeof(host_vcount) + sizeof(plykeys1) + sizeof(host_framecount);
+							}break;
+						}
+						
+						
+						//coto:
+						//read crc from nifi frame so we dont end up with corrupted data.
+						volatile u16 crc16_recv_frame = (u16)*(u16*)(inputbuf + frame_hdr_size + framesize);
+						
+						//generate crc per nifi frame so we dont end up with corrupted data.
+						volatile u16 crc16_frame_gen = swiCRC16	(	0xffff, //uint16 	crc,
+							(u8*)(inputbuf + frame_hdr_size),
+							(framesize)		//cant have this own crc here
+							);
+						
+						//char buf[64];
+						
+						//data is now nifi frame
+						if(crc16_frame_gen == crc16_recv_frame){			
+							getcmd((u8*)&inputbuf[0]);
+							
+							//sprintf(buf,"[FRAME CRC OK]");
+							//consoletext(64*2-32,(char *)&buf[0],0);
+						}
+						else{
+							//sprintf(buf,"[%xFRAME CRC CORRUPTED]",(u8)inputbuf[0]);
+							//consoletext(64*2-32,(char *)&buf[0],0);
+						}
+						
+					}
+				}
+			}
+			break;
+		}
+		
+		
+		return true;	//exit
 	}
-	framecount++;
+	
+	else if(MyIPC->dswifiSrv.dsnwifisrv_mode == dswifi_nifimode){
+		static int count = 0;
+		if(!nifi_stat) {
+			if(nifi_cmd & MP_NFEN) {
+				Wifi_DisableWifi();
+				nifi_cmd &= ~MP_NFEN;
+			}
+			return false;
+		}
+		
+		switch(nifi_stat) {
+			case 1:		//act as a host, waiting for another player.
+				if(!(nifi_cmd & MP_NFEN)){
+					Wifi_EnableWifi();
+				}
+				nifi_cmd = MP_HOST | MP_NFEN;
+				break;	//waiting for interrupt.
+			case 2:		//act as a guest.
+				if(!(nifi_cmd & MP_NFEN)){
+					Wifi_EnableWifi();
+				}
+				nifi_cmd = MP_NFEN;
+				if(count++ > 30) {			//send a flag every second to search a host.
+					
+					
+					switch(MyIPC->dswifiSrv.dsnwifisrv_mode){
+						case dswifi_nifimode:{
+							Wifi_RawTxFrame_NIFI(sizeof(nifitoken), 0x0014, (unsigned short *)nifitoken);
+						}
+						break;
+						case dswifi_wifimode:{
+							Wifi_RawTxFrame_WIFI(sizeof(nifitoken), (u8*)nifitoken);
+						}
+						break;
+					}
+		
+					count = 0;
+				}
+				break;
+			case 3:							//tell the guest that he should send the PRGCRC to the host
+				if(!(nifi_cmd & MP_NFEN)){
+					Wifi_EnableWifi();
+				}
+				if(count++ > 30) {			//send a connected flag.
+					
+					
+					switch(MyIPC->dswifiSrv.dsnwifisrv_mode){
+						case dswifi_nifimode:{
+							Wifi_RawTxFrame_NIFI(sizeof(nificonnect), 0x0014, (unsigned short *)nificonnect);
+						}
+						break;
+						case dswifi_wifimode:{
+							Wifi_RawTxFrame_WIFI(sizeof(nificonnect), (u8*)nificonnect);
+						}
+						break;
+					}
+					
+					count = 0;
+				}
+				break;
+			case 4:
+				if(!(nifi_cmd & MP_NFEN)){
+					Wifi_EnableWifi();
+				}
+				if(count++ > 30) {			//send a connected flag.
+					nificrc[3] = debuginfo[17] &0xFF;
+					nificrc[4] = (debuginfo[17] >> 8 )&0xFF;
+					
+					switch(MyIPC->dswifiSrv.dsnwifisrv_mode){
+						case dswifi_nifimode:{
+							Wifi_RawTxFrame_NIFI(6, 0x0014, (unsigned short *)nificrc);
+						}
+						break;
+						case dswifi_wifimode:{
+							Wifi_RawTxFrame_WIFI(6, (u8*)nificrc);
+						}
+						break;
+					}
+					
+					count = 0;
+				}
+				break;
+			case 5:				//host should refresh the global keys.
+			{	
+				plykeys1 = IPC_KEYS & MP_KEY_MSK;
+				sendcmd((u8*)&nfdata[0]);
+			}	
+				break;
+			case 6:				//guest...
+			{	
+				plykeys2 = IPC_KEYS & MP_KEY_MSK;
+				nifi_keys_sync	=	(plykeys1 & MP_KEY_MSK) | ((plykeys2 & MP_KEY_MSK) << 16);
+				sendcmd((u8*)&nfdata[0]);
+			}	
+				break;
+			
+			default:
+			break;
+			
+		}
+	}
+	
+	return true;
 }

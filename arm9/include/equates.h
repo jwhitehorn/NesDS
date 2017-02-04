@@ -6,7 +6,7 @@ DEBUGSTEP	= 0
 @----------------------------------------------------------------------------
 
 wram = NES_DRAM	//64k ram is reserved here.
-ROM_MAX_SIZE = 0x318000
+ROM_MAX_SIZE = 0x200000 //0x318000 kills dsnifi
 MAXFILES	 = 1024
 
 IPC			= ipc_region

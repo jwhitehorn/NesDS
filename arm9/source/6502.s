@@ -1121,7 +1121,6 @@ line241NMI:
 	stmia r2,{m6502_nz-m6502_pc}	@save 6502 state
 
 	bl refreshNESjoypads
-
 	bl updatesound
 
 	adr lr, 2f

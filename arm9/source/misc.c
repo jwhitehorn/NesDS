@@ -5,6 +5,16 @@
 #include "c_defs.h"
 #include "menu.h"
 
+#include "arm9main.h"
+#include "multi.h"
+
+#include <nds/arm9/cache.h>
+
+#include "interrupts/fifo_handler.h"
+#include "interrupts/interrupts.h"
+#include "touch_ipc.h"
+#include "../../common/common.h"
+
 int save_slots = 0;
 int slots_num = 0;
 
@@ -24,6 +34,8 @@ void reg4015interrupt(u32 msg, void *none)
 			addr: no known
 * description:		none
 ******************************/
+//ori
+/*
 void writeAPU(u32 val,u32 addr) 
 {
 	if(IPC_APUW - IPC_APUR < 256 && addr != 0x4011 && 
@@ -38,6 +50,29 @@ void writeAPU(u32 val,u32 addr)
 		*(IPC_APUWRITE + (addr & 0xFF)) = 0x100 | val;
 	}
 }
+*/
+
+//__attribute__((section(".itcm")))
+void writeAPU(u32 val,u32 addr) 
+{
+	//method 1
+	if(IPC_APUW - IPC_APUR < 256 && addr != 0x4011 && 
+			((addr > 0x8000 && (debuginfo[16] == 24 || debuginfo[16] == 26)) ||
+			(addr < 0x4018 || debuginfo[16] == 20))) {
+		
+		//IO Write direct
+		SendArm7Command(FIFO_APU_WRITE16,(u32)((addr << 8) | val),0x0,0x0);
+		
+		IPC_APUW++; //fifo IPC_APUW update arm9notify when readAPU @ ARM7 is done
+	}
+	if(addr == 0x4011) {
+		unsigned char *out = IPC_PCMDATA;
+		out[__scanline] = val | 0x80;
+		*(IPC_APUWRITE + (addr & 0xFF)) = 0x100 | val;
+	}
+	
+}
+
 
 /*****************************
 * name:			Sound_reset
@@ -46,7 +81,8 @@ void writeAPU(u32 val,u32 addr)
 * description:		none
 ******************************/
 void Sound_reset() {
-	fifoSendValue32(FIFO_USER_08, FIFO_APU_RESET);
+	//fifoSendValue32(FIFO_USER_08, FIFO_APU_RESET);
+	SendArm7Command(FIFO_APU_RESET,0x0,0x0,0x0);
 }
 
 int last_x, last_y;	//most recently touched coords
@@ -60,8 +96,18 @@ int touchstate=1; 	// <2=pen up, 2=first touch, 3=pen down, 4=pen released
 ******************************/
 void touch_update() {
 	int ts=touchstate;
+	
 	touchPosition touch;
-	touchRead(&touch);
+	//touchRead(&touch);
+	touchRead_customIPC(&touch);
+	
+	if(MyIPC->touched > 0){
+		IPC_KEYS |= KEY_TOUCH;
+	}
+	else{
+		IPC_KEYS &= ~KEY_TOUCH;
+	}
+	
 	if(IPC_KEYS & KEY_TOUCH) {
 		last_x=touch.px;
 		IPC_TOUCH_X=touch.px;
@@ -488,4 +534,40 @@ void debugwrite_c(int val, int addr)
 	char buf[64];
 	sprintf(buf, "addr:%04X, val:%02X\n", addr, val);
 	nocashMessage(buf);
+}
+
+int topvalue(int a,int b){
+	if(a >= b)
+		return a;
+	else if(b > a)
+		return b;
+	else 
+		return 0;
+}
+
+int bottomvalue(int a,int b){
+	if(a <= b)
+		return a;
+	else if(b < a)
+		return b;
+	else 
+		return 0;
+}
+
+int getintdiff(int a,int b){
+	int top = topvalue(a,b);
+	if(a >= top){	//a is top
+		return (a - b);
+	}
+	else if (b >= top){	//b is top
+		return (b - a);
+	}
+	else
+		return 0;
+}
+
+int getnifivcount(){
+	//if ret 0 a and b are equal
+	int framediff = getintdiff(host_vcount,guest_vcount);
+	return (host_vcount - framediff); 
 }

@@ -7,7 +7,7 @@
 @---------------------------------------------------------------------------------
 nespatch:
 @---------------------------------------------------------------------------------
-@patch some games to act smoontly....
+@cycle stealing patches so games run faster/enough accurate
 	ldr_ r0, prgcrc
 
 	ldr r1, =0x49B3		@TMNT 1

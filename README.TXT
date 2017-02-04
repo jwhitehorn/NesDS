@@ -1,15 +1,35 @@
-HOW-TO COMPILE:
-
-Create a new folder, copy source code like you would on any DS project
-open MSYS and MAKE. (Requires devkitPro)
-
--
-
 nesDS, using toolchain devkitARM.
 We spent a few weeks to port the original nesDS project to the GCC toolchain. Then we made a new EX Edition, and made it possible to emulate the the NES/FC games that the origianl nesDS didn't work well.
 Since the 0.40 version, I ported the code of EX Edtion to the original nesDS, now it is the best nes-emulator~!
 
 If you found any bug on nesDS, just tell me. Maybe I could fix it.
+
+2017-02-04
+coto: VERY experimental UDP netplay. I call the library "DSWNIFI" since it allows (untested) to swap between NIFI and WIFI on the fly. More on that below. 
+	NOTE: It's so damn unstable , i tell you. you will desync very fast, some UDP prediction algorithm must be set, and some accounting of the current rendered frames is needed. 
+	How to use:
+		step 1)
+		at arm9main.c:
+		switch_dswnifi_mode((u8)dswifi_wifimode); sets WIFI UDP Netplay. Follow step 2
+		
+		switch_dswnifi_mode((u8)dswifi_nifimode); sets NIFI. you can choose NIFI like nesds1.3c did and forget about UDP (no more steps)
+		
+		step 2)
+		set some AP where your DSes and the PC can connect (WIFI). Since I tested this on an old android phone (OPEN, no security), the server is hardcoded at 192.168.43.220 (set that IP statically at server)
+		
+		step 3)
+		run dswnifi-pc-software-companion.exe (14KB, no virus, there's the source if you want to see it for yourself.. ). You'll see a console that tells you to connect 2 DSes
+		
+		step 4)
+		if you set dswifi_wifimode at step1, boot nesds and choose any game, it should connect and you should see some caracters at console. You need two DS consoles connected for this to work.
+		When you are done, both DSes should be connected, and game will start... through UDP! I told you it was laggy and desync'd!
+	
+	Changes:
+		IRQs are used better, FIFO, and DSWifi of course! I did end up extending some IRQ stuff from LIBNDS, since it can be re-used for other projects.
+	
+		
+2016-10-28
+coto: using hardware FIFO irqs for wifi / apu read/writes.. instead the usual libnds FIFO overlayer, should give a very small speedup
 
 2016-5-03
 coto: nifi is back (rollback changes to DSWIFI 0.3.13), fixed a guru meditation screen due to buffer overflow on romdb rom adjustment, becoming NesDS1.3c

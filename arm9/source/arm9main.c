@@ -5,8 +5,26 @@
 #include <unistd.h>
 #include "ds_misc.h"
 #include "c_defs.h"
+
+#include "arm9main.h"
+#include "multi.h"
+#include "dswifi9.h"
+#include "nifi.h"
+#include "wifi_shared.h"
+#include "wifi_arm9.h"
+#include "utils.h"
+
+#include "interrupts/fifo_handler.h"
+#include "interrupts/interrupts.h"
+#include "touch_ipc.h"
+#include "../../common/common.h"
+
+#include "http_utils.h"
+#include "client_http_handler.h"
+
 //frameskip min = 1, max = xxxxxx....
 int soft_frameskip = 3;
+
 #define SOFT_FRAMESKIP soft_frameskip
 
 #ifdef ROM_EMBEDED
@@ -24,7 +42,10 @@ void do_romebd()
 void showversion()
 {
 	memset((void *)(SUB_BG),0,64*3);
-	consoletext(64*2-32,"     nesDS 1.3c ________________________________",0);
+	//consoletext(64*2-32,"     nesDS 1.3d ________________________________",0);
+	//char buf[16];
+	//sprintf(buf, "framecount %d ", nesds_framecount);
+	//consoletext(64*2-32,buf,0);
 }
 
 /*****************************
@@ -33,11 +54,13 @@ void showversion()
 * argument:		none
 * description:	NTSC for 60fps, PAL for 50fps. Call this function to sync with NES emulation.
 ******************************/
+/*
 void vblankinterrupt() {
 	debuginfo[6]++;
 	EMU_VBlank();
 	irqDisable(IRQ_VCOUNT);			//we should disable this...
 }
+*/
 
 void aliveinterrupt(u32 msg, void *none)
 {
@@ -105,28 +128,46 @@ int global_playcount = 0;				//used for NTSC/PAL
 int subscreen_stat=-1;				//short-cuts will change its value.
 int argc;
 char **argv;
+
+
+u32 interrupts_to_wait_arm9 = 0;
+__attribute__((section(".dtcm")))
+int nesds_framecount=0;	//global framecount emulator
+
+//new irqs
 int main(int _argc, char **_argv) {
-	int framecount=0;
+	
 	int sramcount=0;
 
 	argc=_argc, argv=_argv;
 	defaultExceptionHandler();
-
-	fifoSendValue32(FIFO_USER_06, (u32)ipc_region);
-
+	
+	//fifo setups
+    irqInitExt(IntrMainExt);
+	
+	irqSet(IRQ_VBLANK, Vblank);
+	irqSet(IRQ_HBLANK,Hblank);
+	irqSet(IRQ_VCOUNT,vcounter);
+	irqSet(IRQ_FIFO_NOT_EMPTY,HandleFifoNotEmpty);
+    irqSet(IRQ_FIFO_EMPTY,HandleFifoEmpty);
+	
+	interrupts_to_wait_arm9 = IRQ_HBLANK|IRQ_VBLANK|IRQ_VCOUNT| IRQ_FIFO_NOT_EMPTY |IRQ_FIFO_EMPTY;
+	irqEnable(interrupts_to_wait_arm9);
+	
+	REG_IPC_SYNC = 0;
+    REG_IPC_FIFO_CR = IPC_FIFO_RECV_IRQ | IPC_FIFO_SEND_IRQ | IPC_FIFO_ENABLE;
+    
+    //set up ppu: do irq on hblank/vblank/vcount/and vcount line is 159
+    REG_DISPSTAT = REG_DISPSTAT | DISP_HBLANK_IRQ | DISP_VBLANK_IRQ | DISP_YTRIGGER_IRQ | (VCOUNT_LINE_INTERRUPT << 15);
+    
 	DS_init(); //DS init.
 #ifndef ROM_EMBEDED
 	active_interface = fatInitDefault(); //init file operations to your external card.
-
-	initNiFi();
+	
 #endif
 	EMU_Init(); //emulation init.
-
-	irqSet(IRQ_VBLANK, vblankinterrupt);
-	irqEnable(IRQ_HBLANK);
-	//fifoSetValue32Handler(FIFO_USER_06, aliveinterrupt, 0);
-	//fifoSetValue32Handler(FIFO_USER_05, reg4015interrupt, 0);
-
+	apusetup();
+	
 	IPC_ALIVE = 0;
 	IPC_APUIRQ = 0;
 	IPC_REG4015 = 0;
@@ -146,24 +187,29 @@ int main(int _argc, char **_argv) {
 #else
 	do_romebd();
 #endif
-
+	
 	//__emuflags |= PALSYNC;
-
+	
+	//nifi: 
+	//switch_dswnifi_mode((u8)dswifi_nifimode);
+	//wifi: 
+	switch_dswnifi_mode((u8)dswifi_wifimode);
+	
 	while(1) { // main loop to do the emulation
-		framecount++;
+		
 		if(__emuflags & PALTIMING && global_playcount == 0) {
-			framecount--;
+			nesds_framecount--;
 		}
+		
 		if(debuginfo[VBLS]>59) {
-			debuginfo[VBLS]-=60;
+			debuginfo[VBLS]=nesds_framecount;
 			debuginfo[1] = debuginfo[0];
 			debuginfo[0] = 0;
-			debuginfo[FPS]=framecount;
-			framecount=0;
+			debuginfo[FPS]=nesds_framecount;	
 		}
-
-		scanKeys();
-		IPC_KEYS = keysCurrent();
+		
+		//scanKeys();
+		IPC_KEYS = keyscurr_ipc();
 
 		//change nsf states
 		if(__emuflags & NSFFILE) {
@@ -209,12 +255,57 @@ int main(int _argc, char **_argv) {
 
 		touch_update(); // do menu functions.
 		do_menu();	//do control menu.
-	
-		do_multi();
-		if(nifi_stat == 0 || nifi_stat >= 5)
+		do_multi();	//add multi dswifi support
+		
+		
+		//single player
+		if(nifi_stat == 0 ){
 			play(); //emulate a frame of the NES game.
-		else 
-			swiWaitForVBlank();
+		}
+		//multi player
+		else if((nifi_stat == 5) || (nifi_stat == 6)){
+			
+			if(getintdiff(host_framecount,guest_framecount) > 0){
+				int diff_framecount = getintdiff(host_framecount,guest_framecount);
+				int top = topvalue(nesds_framecount,diff_framecount);
+				int bottom = bottomvalue(nesds_framecount,diff_framecount);
+				//host: read only 	guest_framecount
+				if(nifi_stat == 5){
+					nesds_framecount = top - bottom;
+				}
+				//guest: read only 	host_framecount
+				if(nifi_stat == 6){
+					nesds_framecount = top - bottom;
+				}
+			}
+			
+			//nds sync ppus
+			int framediff = getintdiff(host_vcount,guest_vcount);
+			int calc_vcount = 0;
+			if(framediff > 0){
+				//#1 sync LY VCOUNT
+				int top2 = topvalue(host_vcount,framediff);
+				int bottom2 = bottomvalue(host_vcount,framediff);	
+				calc_vcount = top2 - bottom2;
+			}
+			
+			int nds_vc = (REG_VCOUNT&0xff);
+			if((nds_vc >= 202 ) && (nds_vc <= 212) ){
+				if(framediff > 0){
+					//update only if we have a valid nifi frame
+					REG_VCOUNT = calc_vcount;
+				}
+				swiIntrWait(1,IRQ_VCOUNT);
+			}
+			
+			nifi_keys =  nifi_keys_sync;
+			play();
+			
+		}
+		
+		
+		swiWaitForVBlank();
+		
 	}
 }
 
@@ -254,7 +345,7 @@ void play() {
 	backward = __emuflags & REWIND;
 	
 	if(backward) { // for rolling back... a nice function?
-		swiWaitForVBlank();
+		//swiWaitForVBlank();
 		framecount++;
 		if(framecount>2) {
 			framecount-=3;
@@ -268,20 +359,22 @@ void play() {
 		}
 	} else {
 		if(__emuflags & SOFTRENDER) {
-			if(!(forward) && (fcount >= debuginfo[6] && fcount - debuginfo[6] < 10) ) // disable VBlank to speed up emulation.
-				swiWaitForVBlank();
+			if(!(forward) && (fcount >= debuginfo[6] && fcount - debuginfo[6] < 10) ){ // disable VBlank to speed up emulation.
+				//swiWaitForVBlank();
+			}
 		} else {
 			if(!(forward)) {
 				if(__emuflags & PALSYNC) {
 					if(__emuflags & (SOFTRENDER | PALTIMING))
 						__emuflags ^= PALSYNC;
 					if(REG_VCOUNT < 190) {
-						swiWaitForVBlank();
+						//swiWaitForVBlank();
 					}
 				}
 				else {
-					if((!(__emuflags & ALLPIXEL)) || (all_pix_start != 0))
-						swiWaitForVBlank();
+					if((!(__emuflags & ALLPIXEL)) || (all_pix_start != 0)){
+						//swiWaitForVBlank();
+					}
 				}
 			}
 		}
@@ -303,8 +396,9 @@ void play() {
 			}
 		}
 		else {
-			if((__emuflags & PALTIMING) && (__emuflags & ALLPIXEL) && !(__emuflags & SOFTRENDER))
-				swiWaitForVBlank();
+			if((__emuflags & PALTIMING) && (__emuflags & ALLPIXEL) && !(__emuflags & SOFTRENDER)){
+				//swiWaitForVBlank();
+			}
 		}
 	}
 	

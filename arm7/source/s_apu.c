@@ -10,6 +10,8 @@
 #include "c_defs.h"
 #include "s_vrc6.h"
 
+#include "../../common/common.h"
+
 #define NES_BASECYCLES (21477270)
 
 /* 31 - log2(NES_BASECYCLES/(12*MIN_FREQ)) > CPS_BITS  */

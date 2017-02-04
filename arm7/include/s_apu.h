@@ -5,9 +5,9 @@
 extern "C" {
 #endif
 
-void APUSoundInstall(void);
-void APU4015Reg(void);
-
+extern void APUSoundInstall(void);
+extern void APU4015Reg(void);
+extern void APUSoundWrite(Uint address, Uint value);
 #ifdef __cplusplus
 }
 #endif

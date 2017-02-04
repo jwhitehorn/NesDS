@@ -68,7 +68,7 @@ SOFTWARE.
 
 
 
-#include "wifi_shared.h"
+#include "../../../common/wifi_shared.h"
 
 extern volatile Wifi_MainStruct * WifiData;
 
@@ -126,8 +126,8 @@ extern int Wifi_ProcessReceivedFrame(int macbase, int framelen);
 
 extern void Wifi_Sync();
 extern void Wifi_SetSyncHandler(WifiSyncHandler sh);
-
-
+extern void wifiAddressHandler( void * address, void * userdata );
+extern void arm7_synctoarm9();
 #ifdef __cplusplus
 };
 #endif

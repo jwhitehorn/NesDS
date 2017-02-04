@@ -10,6 +10,11 @@
 #include "menu.h"
 //#include "extlink_filestruct.h"
 
+#include "interrupts/fifo_handler.h"
+#include "interrupts/interrupts.h"
+#include "touch_ipc.h"
+#include "../../common/common.h"
+
 extern int subscreen_stat;
 extern int shortcuts_tbl[16];
 
@@ -73,8 +78,9 @@ void do_rommenu() {
 
 	ips_stat = 0;		//disable ips first.
 
-	fifoSendValue32(FIFO_USER_08, FIFO_APU_PAUSE);			//disable sound when selecting a rom.
-
+	//fifoSendValue32(FIFO_USER_08, FIFO_APU_PAUSE);			//disable sound when selecting a rom.
+	SendArm7Command(FIFO_APU_PAUSE,0x0,0x0,0x0);
+	
 	if(!global_roms) {
 		roms=init_rommenu();
 		global_roms = roms;
@@ -111,7 +117,8 @@ void rommenu(int roms) {
 	int loaded=0;
 
 	save_sram();
-
+	
+	touch_update();
 	oldinput=IPC_KEYS;
 
 	if(roms==1)
@@ -204,8 +211,8 @@ int getinput() {
 	static int lastdpad,repeatcount=0;
 	int dpad;
 	int keyhit;
-	scanKeys();
-	IPC_KEYS = keysCurrent();
+	//scanKeys();
+	IPC_KEYS = keyscurr_ipc();
 	keyhit=(oldinput^IPC_KEYS)&IPC_KEYS;
 	oldinput=IPC_KEYS;
 	dpad=IPC_KEYS&(KEY_UP+KEY_DOWN+KEY_LEFT+KEY_RIGHT);

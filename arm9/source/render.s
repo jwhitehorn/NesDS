@@ -138,10 +138,14 @@ soft_render:
 	cmp r0, #0
 	movne pc, lr
 
-	stmfd sp!, {r3-r4, lr}
-	bl swiWaitForVBlank
-	ldmfd sp!, {r3-r4, pc}
-
+	@coto: not required
+	@stmfd sp!, {r3-r4, lr}
+	@bl swiWaitForVBlank
+	@ldmfd sp!, {r3-r4, pc}
+	
+	@new
+	bx lr
+	
 soft_r:
 	ldrb_ r1, rendercount
 	cmp r1, #0

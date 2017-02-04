@@ -2,6 +2,11 @@
 #include "ds_misc.h"
 #include "c_defs.h"
 
+#include "interrupts/fifo_handler.h"
+#include "interrupts/interrupts.h"
+#include "touch_ipc.h"
+#include "../../common/common.h"
+
 extern u32 __nz;
 extern u32 __a;
 extern u32 __x;
@@ -112,7 +117,11 @@ void stepdebug()
 	//memset( ptbuf + 192 + count * 8, 32, (18 * 4 - count) * 8);
 	
 	do {
-		IPC_KEYS = keysCurrent();
+		
+		//IPC_KEYS = keysCurrent();
+		IPC_KEYS = keyscurr_ipc();
+		
+		
 		keys = IPC_KEYS;
 		if(keys & oldkeys & (KEY_SELECT | KEY_R | KEY_L)) {
 			//pstep = stepinfo;

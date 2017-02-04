@@ -5,15 +5,11 @@
 
 #include "audiosys.h"
 #include "handler.h"
+#include "arm7.h"
 
-#define MIXFREQ 0x5e00
-#define MIXBUFSIZE 128
+#include "../../common/common.h"
 
-s16 buffer[MIXBUFSIZE*20];
 
-void readAPU(void);
-void resetAPU(void);
-void dealrawpcm(unsigned char *out);
 
 static int chan = 0;
 
@@ -82,7 +78,7 @@ void mix(int chan) {
 	int mapper = IPC_MAPPER;
 	if(!APU_paused) {
 		int i;
-		s16 *dst = &buffer[chan*MIXBUFSIZE];
+		s16 *dst = (s16*)&buffer[chan*MIXBUFSIZE];
 		for(i = 0; i < MIXBUFSIZE; i++) {
 			static Int32 preval = 0;
 			Int32 output = soundconvert(NESAPUSoundSquareRender1(), 6);
@@ -160,7 +156,8 @@ void mix(int chan) {
 
 		dealrawpcm((u8 *)&buffer[chan*(MIXBUFSIZE/2) + MIXBUFSIZE*18]);
 	}
-	readAPU();
+	
+	readAPU(); //method1
 	APU4015Reg();	//to refresh reg4015.
 }
 
@@ -213,7 +210,7 @@ void initsound() {
 	SCHANNEL_REPEAT_POINT(10) = 0; 
 	TIMER0_DATA = -0x572;
 	TIMER1_DATA = 0x10000 - MIXBUFSIZE;
-	memset(buffer, 0, sizeof(buffer));
+	memset((u32*)buffer, 0, sizeof(buffer));
 
 	memset(IPC_PCMDATA, 0, 512);
 } 
@@ -277,8 +274,7 @@ void dealrawpcm(unsigned char *out)
 	}
 }
 
-void APUSoundWrite(Uint address, Uint value);	//from s_apu.c (skip using read handlers, just write it directly)
-
+/*
 void fifointerrupt(u32 msg, void *none)					//This should be registered to a fifo channel.
 {
 	switch(msg&0xff) {
@@ -299,6 +295,7 @@ void fifointerrupt(u32 msg, void *none)					//This should be registered to a fif
 			break;
 	}
 }
+*/
 
 void resetAPU() {
 	NESReset();
@@ -306,6 +303,8 @@ void resetAPU() {
 	IPC_APUR = 0;
 }
 
+//ori
+/*
 void readAPU()
 {
 	u32 msg;
@@ -326,12 +325,27 @@ void readAPU()
 		IPC_APUR = start;
 	}
 }
+*/
 
+//dont optimize this
+inline void readAPU()
+{
+	u32 msg = 0;
+	
+	while(GetSoftFIFO((u32*)&msg) == true){
+		APUSoundWrite(msg >> 8, msg&0xFF);
+	}
+	IPC_APUR = IPC_APUW;
+}
+
+//unused
+/*
 void interrupthandler() {
 	u32 flags=REG_IF&REG_IE;
 	if(flags&IRQ_TIMER1)
 		soundinterrupt();
 }
+*/
 
 void nesmain() {
 	NESAudioFrequencySet(MIXFREQ);
@@ -349,7 +363,7 @@ void nesmain() {
 	initsound();
 	restartsound(1);
 
-	fifoSetValue32Handler(FIFO_USER_08, fifointerrupt, 0);		//use the last IPC channel to comm..
-	irqSet(IRQ_TIMER1, soundinterrupt);
-	//irqSet(IRQ_LID, lidinterrupt);
+	//fifoSetValue32Handler(FIFO_USER_08, fifointerrupt, 0);		//use the last IPC channel to comm..
+	//irqSet(IRQ_TIMER1, soundinterrupt);
+	
 }

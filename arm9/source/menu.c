@@ -9,6 +9,9 @@
 #include "c_defs.h"
 #include "menu.h"
 
+#include "../../common/common.h"
+
+
 struct menu_item menu_file_items[] = {
 	{
 		.name = "\rLoad ROM",
@@ -733,6 +736,7 @@ void do_menu()
 
 	if(menu_stat == 3) {
 		if(menu_depth == 1) { // show the time
+			/*
 			static char buf[20];
 			static time_t old = 0;
 			time_t unixTime = time(NULL);
@@ -742,6 +746,12 @@ void do_menu()
 				consoletext(64*2 - 12, buf, 0);
 				old = unixTime;
 			}
+			*/
+			
+			//coto: new ipc
+			static char buf[20];
+			sprintf(buf, "%02d:%02d", (int)gba_get_hourrtc(), (int)gba_get_minrtc());
+			consoletext(64*2 - 12, buf, 0);
 		}
 
 		if(touchstate > 1) {

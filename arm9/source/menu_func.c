@@ -7,6 +7,8 @@
 #include "c_defs.h"
 #include "menu.h"
 
+#include "../../common/common.h"
+
 extern u32 agb_bg_map[];
 
 void menu_hide(void)
@@ -525,7 +527,7 @@ void menu_nifi_action(void)
 					nifi_stat = 2;
 				break;
 			case 2:
-				nifi_stat = 0;
+				//nifi_stat = 0;
 				break;
 			}
 			consoletext(64*20+2, nifi_chars[nifi_stat], 0);
@@ -903,7 +905,8 @@ void menu_config_func(void)
 		__emuflags |= SCREENSWAP;
 		break;
 	case 4: //Sound reset
-		fifoSendValue32(FIFO_USER_08, FIFO_SOUND_RESET);
+		//fifoSendValue32(FIFO_USER_08, FIFO_SOUND_RESET);
+		SendArm7Command(FIFO_SOUND_RESET,0x0,0x0,0x0);
 		break;
 	}
 }

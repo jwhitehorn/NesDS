@@ -16,17 +16,24 @@ include $(DEVKITARM)/ds_rules
 #---------------------------------------------------------------------------------
 BUILD		:=	build
 SOURCES		:=	source source/mappers data source/zip   \
-                source/wireless/	\
-                source/disk/	\
-                ../common/	\
-                ../common/source/
-				
+                source/dswifi_arm9/	\
+				source/interrupts/	\
+                source/disk/    \
+				source/memory_handler	\
+				source/httpstuff	\
+                ../common/    \
+                ../common/dswifi/
 INCLUDES	:=	include/ \
                 ../include/ \
-                data/   \
+                source	\
+				source/dswifi_arm9/	\
+				source/memory_handler	\
+				source/httpstuff	\
+				../common/    \
+                ../common/dswifi/	\
+				data/   \
                 source/nes/ \
-                source/disk/	\
-				../common/source
+                source/disk
 DATA		:=
 
 

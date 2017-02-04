@@ -21,7 +21,7 @@ soundwrite:
 
 	@IMPORT writeAPU
 	mov r1,addy
-	bl writeAPU
+	blx writeAPU	@coto: blx since ARMv5
 	
 	ldmfd sp!,{r3,pc}
 @---------------------------------------------------------------------------------
@@ -29,7 +29,8 @@ _4015r:
 @---------------------------------------------------------------------------------
 	ldr r1, =IPC_REG4015		@which is updated by s_apu.c
 	ldrb r0, [r1]
-	mov pc, lr
+	@mov pc, lr		@coto
+	bx lr
 @---------------------------------------------------------------------------------
 updatesound: @called from line 0..  r0-r9 are free to use
 @---------------------------------------------------------------------------------

@@ -15,12 +15,12 @@ include $(DEVKITARM)/ds_rules
 # all directories are relative to this makefile
 #---------------------------------------------------------------------------------
 BUILD		:=	build
-SOURCES		:=	source/		\
+SOURCES		:=	source  \
                 source/wireless/	\
+                source/interrupts/	\
                 ../common/	\
-                ../common/source/
-				
-INCLUDES	:=	include build ../include	../include/nds	source/wireless	../common/source
+                ../common/dswifi
+INCLUDES	:=	include build ../include ../include/nds source/wireless
 DATA		:=
  
 #---------------------------------------------------------------------------------

@@ -24,7 +24,7 @@
 
 	.global rom_files
 	.global rom_start
-	.global ipc_region
+	.global ipc_region	@.EXTERN ipc_region
 	.global nes_region
 	.global ct_buffer
 
@@ -148,7 +148,10 @@ filler: @r0=data r1=dest r2=word count
 hblankinterrupt:
 	ldr r1, =__hblankhook
 	ldr r1, [r1]
-	mov pc, r1
+	@mov pc, r1	@coto: ARMV4 checks bit0 and perform CPSR T bit change on this opcode (gba) 
+	@but ARMV5 deprecates this (nds, by CP15 reg set to ARMv5[by default]) so you can guess what will happen
+	bx r1
+	
 .ltorg
 @---------------------------------------------------------------------------------
 

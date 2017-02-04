@@ -1,6 +1,6 @@
 // DSWifi Project - Arm9 Library Header File (dswifi9.h)
 // Copyright (C) 2005-2006 Stephen Stair - sgstair@akkit.org - http://www.akkit.org
-/******************************************************************************
+/****************************************************************************** 
 DSWifi Lib and test materials are licenced under the MIT open source licence:
 Copyright (c) 2005-2006 Stephen Stair
 
@@ -26,17 +26,20 @@ SOFTWARE.
 #ifndef DSWIFI9_H
 #define DSWIFI9_H
 
-#include "dswifi_version.h"
+#ifndef dswifi9_headers
+#define dswifi9_headers
 #include "wifi_shared.h"
+#include "dswifi_version.h"
+#endif
 
 // well, some flags and stuff are just stuffed in here and not documented very well yet... Most of the important stuff is documented though.
 // Next version should clean up some of this a lot more :)
 
 #define WIFIINIT_OPTION_USELED		   0x0002
 
-// default option is to use 64k heap
-#define WIFIINIT_OPTION_USEHEAP_64     0x0000
-#define WIFIINIT_OPTION_USEHEAP_128    0x1000
+// default option is to use 128k heap
+#define WIFIINIT_OPTION_USEHEAP_128    0x0000
+#define WIFIINIT_OPTION_USEHEAP_64     0x1000
 #define WIFIINIT_OPTION_USEHEAP_256    0x2000
 #define WIFIINIT_OPTION_USEHEAP_512    0x3000
 #define WIFIINIT_OPTION_USECUSTOMALLOC 0x4000
@@ -59,14 +62,28 @@ SOFTWARE.
 #define WFLAG_APDATA_ACTIVE			0x8000
 
 
+// user code uses members of the WIFIGETDATA structure in calling Wifi_GetData to retreive miscellaneous odd information
+enum WIFIGETDATA {
+	WIFIGETDATA_MACADDRESS,			// MACADDRESS: returns data in the buffer, requires at least 6 bytes
+	WIFIGETDATA_NUMWFCAPS,			// NUM WFC APS: returns number between 0 and 3, doesn't use buffer.
 
-
-
+	MAX_WIFIGETDATA
+};
 
 
 
 extern const char * ASSOCSTATUS_STRINGS[];
 
+
+
+
+// Wifi Packet Handler function: (int packetID, int packetlength) - packetID is only valid while the called function is executing.
+// call Wifi_RxRawReadPacket while in the packet handler function, to retreive the data to a local buffer.
+typedef void (*WifiPacketHandler)(int, int);
+
+// Wifi Sync Handler function: Callback function that is called when the arm7 needs to be told to synchronize with new fifo data.
+// If this callback is used (see Wifi_SetSyncHandler()), it should send a message via the fifo to the arm7, which will call Wifi_Sync() on arm7.
+typedef void (*WifiSyncHandler)();
 
 
 #ifdef __cplusplus
@@ -93,7 +110,7 @@ extern void Wifi_DisableWifi();
 //   associated to an AP, but actively receiving and potentially transmitting
 extern void Wifi_EnableWifi();
 
-// Wifi_SetPromiscuousMode: Allows the DS to enter or leave a "promsicuous" mode, in which
+// Wifi_SetPromiscuousMode: Allows the DS to enter or leave a "promsicuous" mode, in which 
 //   all data that can be received is forwarded to the arm9 for user processing.
 //   Best used with Wifi_RawSetPacketHandler, to allow user code to use the data
 //   (well, the lib won't use 'em, so they're just wasting CPU otherwise.)
@@ -109,7 +126,7 @@ extern void Wifi_ScanMode();
 //  int channel: the channel to change to, in the range of 1-13
 extern void Wifi_SetChannel(int channel);
 
-// Wifi_GetNumAP:
+// Wifi_GetNumAP: 
 //  Returns: the current number of APs that are known about and tracked internally
 extern int Wifi_GetNumAP();
 
@@ -139,7 +156,7 @@ extern int Wifi_ConnectAP(Wifi_AccessPoint * apdata, int wepmode, int wepkeyid, 
 extern void Wifi_AutoConnect();
 
 // Wifi_AssocStatus: Returns information about the status of connection to an AP
-//  Returns: a value from the WIFI_ASSOCSTATUS enum, continue polling until you
+//  Returns: a value from the WIFI_ASSOCSTATUS enum, continue polling until you 
 //            receive ASSOCSTATUS_CONNECTED or ASSOCSTATUS_CANNOTCONNECT
 extern int Wifi_AssocStatus();
 
@@ -152,7 +169,7 @@ extern int Wifi_DisconnectAP();
 //  int num_ms:		The number of milliseconds since the last time this function was called.
 extern void Wifi_Timer(int num_ms);
 
-// Wifi_GetIP:
+// Wifi_GetIP: 
 //  Returns:  The current IP address of the DS (may not be valid before connecting to an AP, or setting the IP manually.)
 extern unsigned long Wifi_GetIP(); // get local ip
 
@@ -161,7 +178,7 @@ extern unsigned long Wifi_GetIP(); // get local ip
 //  struct in_addr * pSnmask:	pointer to receive the currently configured subnet mask
 //  struct in_addr * pDns1:		pointer to receive the currently configured primary DNS server IP
 //  struct in_addr * pDns2:		pointer to receive the currently configured secondary DNS server IP
-//  Returns:					The current IP address of the DS
+//  Returns:					The current IP address of the DS 
 extern struct in_addr Wifi_GetIPInfo(struct in_addr * pGateway,struct in_addr * pSnmask,struct in_addr * pDns1,struct in_addr * pDns2);
 
 // Wifi_SetIP: Set the DS's IP address and other IP configuration information.
@@ -188,7 +205,7 @@ extern u32 Wifi_GetStats(int statnum);
 
 // Wifi_RawTxFrame: Send a raw 802.11 frame at a specified rate
 //  unsigned short datalen:	The length in bytes of the frame to send
-//  unsigned short rate:	The rate to transmit at (Specified as mbits/10, 1mbit=0x000A, 2mbit=0x0014)
+//  unsigned short rate:	The rate to transmit at (Specified as mbits/10, 1mbit=0x000A, 2mbit=0x0014)		
 //  unsigned short * data:	Pointer to the data to send (should be halfword-aligned)
 //  Returns:				Nothing of interest.
 extern int Wifi_RawTxFrame(unsigned short datalen, unsigned short rate, unsigned short * data);
@@ -210,7 +227,7 @@ extern int Wifi_RxRawReadPacket(long packetID, long readlength, unsigned short *
 //   is available.
 extern void Wifi_Update();
 
-// Wifi_Sync: Call this function when requested to sync by the arm7 side of the
+// Wifi_Sync: Call this function when requested to sync by the arm7 side of the 
 //   wifi lib
 extern void Wifi_Sync();
 
