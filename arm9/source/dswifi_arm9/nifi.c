@@ -1,7 +1,7 @@
 #include "nifi.h"
 
-#include "../../../common/dsregs.h"
-#include "../../../common/common.h"
+#include "dsregs.h"
+#include "common_shared.h"
 #include "wifi_arm9.h"
 #include "multi.h"
 #include "dswifi9.h"
@@ -43,10 +43,9 @@
 #include <nds/arm9/trig_lut.h>
 #include <nds/arm9/sassert.h>
 
-#include "interrupts/fifo_handler.h"
-#include "interrupts/interrupts.h"
+#include "interrupts.h"
 #include "touch_ipc.h"
-#include "../../common/common.h"
+#include "common_shared.h"
 
 
 #ifdef WIFI_USE_TCP_SGIP

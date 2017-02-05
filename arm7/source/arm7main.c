@@ -6,8 +6,7 @@
 #include "audiosys.h"
 #include "handler.h"
 #include "arm7.h"
-
-#include "../../common/common.h"
+#include "common_shared.h"
 
 
 

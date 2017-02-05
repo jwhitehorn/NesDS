@@ -1,7 +1,7 @@
 #include "touch_ipc.h"
 #include <nds.h>
 #include <nds/touch.h>
-#include "../../../common/common.h"
+#include "common_shared.h"
 
 __attribute__((section(".itcm")))
 void touchRead_customIPC(touchPosition * touchpos_inst){

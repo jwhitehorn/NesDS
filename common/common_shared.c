@@ -2,14 +2,14 @@
 //Use it at your will, just make sure you read WELL the descriptions below.
 
 #include <nds.h>
-#include "common.h"
+#include "common_shared.h"
 
 #ifdef ARM7
 
 #include <string.h>
 
-#include "../arm7/source/wireless/wifi_arm7.h"
-#include "../arm7/source/arm7.h"
+#include "wifi_arm7.h"
+#include "arm7.h"
 #include "audiosys.h"
 #include "handler.h"
 #include "c_defs.h"

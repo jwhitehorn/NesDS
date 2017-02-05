@@ -9,7 +9,7 @@
 #include "c_defs.h"
 #include "menu.h"
 
-#include "../../common/common.h"
+#include "common_shared.h"
 
 
 struct menu_item menu_file_items[] = {

@@ -8,7 +8,7 @@
 #ifndef common_ipc
 #define common_ipc
 
-#include "../common/common.h"
+#include "common_shared.h"
 
 #endif
 #endif

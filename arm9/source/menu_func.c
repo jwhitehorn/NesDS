@@ -7,7 +7,7 @@
 #include "c_defs.h"
 #include "menu.h"
 
-#include "../../common/common.h"
+#include "common_shared.h"
 
 extern u32 agb_bg_map[];
 

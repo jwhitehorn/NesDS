@@ -3,20 +3,16 @@
 ---------------------------------------------------------------------------------*/
 #include <nds.h>
 #include <dswifi7.h>
-//#include <maxmod7.h>
 #include "ds_misc.h"
 #include "c_defs.h"
 
 #include "arm7.h"
-#include "interrupts/fifo_handler.h"
-#include "interrupts/interrupts.h"
-
-#include "../../common/common.h"
+#include "interrupts.h"
+#include "common_shared.h"
 
 void nesmain();
 
 volatile s16 buffer[MIXBUFSIZE*20];
-
 
 volatile bool exitflag = false;
 

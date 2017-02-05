@@ -15,25 +15,33 @@ include $(DEVKITARM)/ds_rules
 # all directories are relative to this makefile
 #---------------------------------------------------------------------------------
 BUILD		:=	build
-SOURCES		:=	source source/mappers data source/zip   \
-                source/dswifi_arm9/	\
-				source/interrupts/	\
-                source/disk/    \
-				source/memory_handler	\
-				source/httpstuff	\
+SOURCES		:=	source/	\
+				source/mappers/	\
+				data/	\
+				source/disk/source/	\
+				source/dswifi_arm9/	\
+				source/httpstuff/source/	\
+				source/zip/   \
+                source/interrupts/source/	\
+                source/memory_handler/source	\
                 ../common/    \
                 ../common/dswifi/
+				
 INCLUDES	:=	include/ \
                 ../include/ \
-                source	\
-				source/dswifi_arm9/	\
-				source/memory_handler	\
-				source/httpstuff	\
+				../include/netinet/ \
+				../include/sys/ \
+				source/disk/include/	\
+                source/dswifi_arm9/	\
+				source/	\
+				source/httpstuff/include/	\
+				source/interrupts/include/	\
+				source/memory_handler/include/	\
 				../common/    \
                 ../common/dswifi/	\
 				data/   \
                 source/nes/ \
-                source/disk
+                
 DATA		:=
 
 

@@ -2,13 +2,10 @@
 #include <nds/system.h>
 #include <nds/interrupts.h>
 
-#include "../../../common/common.h"
-
-#include "fifo_handler.h"
+#include "common_shared.h"
 #include "interrupts.h"
-
-#include "../touch.h"
-#include "../wireless/wifi_arm7.h"
+#include "touch.h"
+#include "wifi_arm7.h"
 
 
 void hblank(){

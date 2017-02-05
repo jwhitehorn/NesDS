@@ -10,10 +10,9 @@
 
 #include <nds/arm9/cache.h>
 
-#include "interrupts/fifo_handler.h"
-#include "interrupts/interrupts.h"
+#include "interrupts.h"
 #include "touch_ipc.h"
-#include "../../common/common.h"
+#include "common_shared.h"
 
 int save_slots = 0;
 int slots_num = 0;

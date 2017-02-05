@@ -8,12 +8,10 @@
 #include "c_defs.h"
 #include "minIni.h"
 #include "menu.h"
-//#include "extlink_filestruct.h"
 
-#include "interrupts/fifo_handler.h"
-#include "interrupts/interrupts.h"
+#include "interrupts.h"
 #include "touch_ipc.h"
-#include "../../common/common.h"
+#include "common_shared.h"
 
 extern int subscreen_stat;
 extern int shortcuts_tbl[16];

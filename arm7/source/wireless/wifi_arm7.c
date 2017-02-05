@@ -26,13 +26,12 @@ SOFTWARE.
 
 
 #include <nds.h>
-#include "../../../common/dsregs.h"
+#include "dsregs.h"
 #include "wifi_arm7.h"
 
-#include "../../../common/spinlock.h" // .h file with code for spinlocking in it.
-#include "../../../common/common.h" 
-
-#include "../arm7.h"
+#include "spinlock.h" // .h file with code for spinlocking in it.
+#include "common_shared.h" 
+#include "arm7.h"
 
 volatile Wifi_MainStruct * WifiData = 0;
 WifiSyncHandler synchandler = 0;

@@ -26,8 +26,8 @@ SOFTWARE.
 
 
 #include <nds.h>
-#include "../../../common/dsregs.h"
-#include "../../../common/common.h"
+#include "dsregs.h"
+#include "common_shared.h"
 
 #include "wifi_arm9.h"
 #include "dswifi9.h"

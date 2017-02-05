@@ -10,7 +10,7 @@
 #include "c_defs.h"
 #include "s_vrc6.h"
 
-#include "../../common/common.h"
+#include "common_shared.h"
 
 #define NES_BASECYCLES (21477270)
 

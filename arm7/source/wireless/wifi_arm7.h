@@ -68,7 +68,7 @@ SOFTWARE.
 
 
 
-#include "../../../common/wifi_shared.h"
+#include "wifi_shared.h"
 
 extern volatile Wifi_MainStruct * WifiData;
 

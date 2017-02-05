@@ -16,11 +16,16 @@ include $(DEVKITARM)/ds_rules
 #---------------------------------------------------------------------------------
 BUILD		:=	build
 SOURCES		:=	source  \
-                source/wireless/	\
-                source/interrupts/	\
+                source/interrupts/source/	\
+				source/wireless/	\
                 ../common/	\
                 ../common/dswifi
-INCLUDES	:=	include build ../include ../include/nds source/wireless
+INCLUDES	:=	include/  \
+				../include/  \
+                source/interrupts/include/	\
+				source/wireless/	\
+                ../common/	\
+                ../common/dswifi
 DATA		:=
  
 #---------------------------------------------------------------------------------

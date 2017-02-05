@@ -12,16 +12,14 @@
 #include <string.h>
 #include <nds.h>
 
-#include "../../../common/common.h" 
-
-#include "fifo_handler.h"
+#include "common_shared.h" 
 #include "interrupts.h"
 #include "dswifi9.h"
 
 #include "ds_misc.h"
 #include "c_defs.h"
-#include "../arm9main.h"
-#include "../multi.h"
+#include "arm9main.h"
+#include "multi.h"
 #include "nifi.h"
 
 #include "http_utils.h"

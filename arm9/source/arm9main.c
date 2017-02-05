@@ -14,10 +14,9 @@
 #include "wifi_arm9.h"
 #include "utils.h"
 
-#include "interrupts/fifo_handler.h"
-#include "interrupts/interrupts.h"
+#include "interrupts.h"
 #include "touch_ipc.h"
-#include "../../common/common.h"
+#include "common_shared.h"
 
 #include "http_utils.h"
 #include "client_http_handler.h"

@@ -31,7 +31,7 @@ SOFTWARE.
 
 #include <nds/ndstypes.h>
 
-#include "../../../common/wifi_shared.h"
+#include "wifi_shared.h"
 
 // default option is to use 128k heap
 #define WIFIINIT_OPTION_USEHEAP_128    0x0000

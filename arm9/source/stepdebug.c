@@ -2,10 +2,9 @@
 #include "ds_misc.h"
 #include "c_defs.h"
 
-#include "interrupts/fifo_handler.h"
-#include "interrupts/interrupts.h"
+#include "interrupts.h"
 #include "touch_ipc.h"
-#include "../../common/common.h"
+#include "common_shared.h"
 
 extern u32 __nz;
 extern u32 __a;
