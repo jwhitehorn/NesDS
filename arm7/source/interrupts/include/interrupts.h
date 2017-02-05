@@ -1,19 +1,47 @@
+//these just extend libnds interrupt libraries
+#ifndef nds_interrupt7_headers
+#define nds_interrupt7_headers
+
 #include <nds.h>
+#include <nds/interrupts.h>
+#include <nds/system.h>
+#include <nds/ipc.h>
+
+#ifdef ARM7
+#include <nds/arm7/i2c.h>
+#endif
+
+
+#endif
 
 #ifdef __cplusplus
 extern "C"{
 #endif
 
-//r0        0=Return immediately if an old flag was already set (NDS9: bugged!)
-//          1=Discard old flags, wait until a NEW flag becomes set
-//r1        Interrupt flag(s) to wait for (same format as IE/IF registers)
-//extern void IntrHandlerAsm();
-//extern void InterruptHandler(void);
-
+//external (usermode)
 extern void hblank();
 extern void vblank();
 extern void vcounter();
 extern void timer1();
+
+//internal code (kernel)
+extern void IntrMainExt();
+
+//libnds
+extern void irqDummy(void);
+extern struct IntTable irqTable[MAX_INTERRUPTS];
+
+#ifdef ARM7
+extern void i2cIRQHandler();
+extern bool isDSiMode();
+#endif
+
+#ifdef INT_TABLE_SECTION
+#else
+extern struct IntTable irqTable[MAX_INTERRUPTS];
+#endif
+extern void irqInitExt(IntFn handler);
+
 
 #ifdef __cplusplus
 }

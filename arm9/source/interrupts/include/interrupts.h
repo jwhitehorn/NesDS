@@ -1,14 +1,13 @@
-
 //these just extend libnds interrupt libraries
-#ifndef nds_interrupt_headers
-#define nds_interrupt_headers
-
+#ifndef nds_interrupt9_headers
+#define nds_interrupt9_headers
 
 #include <nds.h>
 
 #include <nds/interrupts.h>
 #include <nds/system.h>
 #include <nds/ipc.h>
+
 #ifdef ARM7
 #include <nds/arm7/i2c.h>
 #endif
