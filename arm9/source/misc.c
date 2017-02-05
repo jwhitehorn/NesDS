@@ -52,10 +52,8 @@ void writeAPU(u32 val,u32 addr)
 }
 */
 
-//__attribute__((section(".itcm")))
 void writeAPU(u32 val,u32 addr) 
 {
-	//method 1
 	if(IPC_APUW - IPC_APUR < 256 && addr != 0x4011 && 
 			((addr > 0x8000 && (debuginfo[16] == 24 || debuginfo[16] == 26)) ||
 			(addr < 0x4018 || debuginfo[16] == 20))) {
@@ -564,10 +562,4 @@ int getintdiff(int a,int b){
 	}
 	else
 		return 0;
-}
-
-int getnifivcount(){
-	//if ret 0 a and b are equal
-	int framediff = getintdiff(host_vcount,guest_vcount);
-	return (host_vcount - framediff); 
 }

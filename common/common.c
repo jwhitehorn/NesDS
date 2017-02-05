@@ -102,7 +102,6 @@ __attribute__((section(".itcm")))
 #endif
 inline void HandleFifoEmpty(){
 	
-	//REG_IF = IRQ_FIFO_EMPTY;
 }
 
 //FIFO HANDLER INIT
@@ -110,9 +109,6 @@ inline void HandleFifoEmpty(){
 __attribute__((section(".itcm")))
 #endif
 inline void HandleFifoNotEmpty(){
-	
-	//REG_IF = IRQ_FIFO_NOT_EMPTY;
-	
 	u32 command1 = 0,command2 = 0,command3 = 0,command4 = 0;
 	
 	if(!(REG_IPC_FIFO_CR & IPC_FIFO_RECV_EMPTY)){
@@ -212,7 +208,6 @@ void FIFO_DRAINWRITE(){
 
 //FIFO HANDLER END
 
-//todo: move back ipc_region to ewram, on shared region is unstable as fuck
 #ifdef ARM9
 void apusetup(){
 	MyIPC->IPC_ADDR = (u32*)ipc_region;

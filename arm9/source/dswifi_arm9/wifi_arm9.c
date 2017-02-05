@@ -1051,8 +1051,10 @@ void wifiValue32Handler(u32 value, void* data) {
 bool Wifi_InitDefault(bool useFirmwareSettings) {
 //---------------------------------------------------------------------------------
 	//fifoSetValue32Handler(FIFO_DSWIFI,  wifiValue32Handler, 0);
-	Wifi_RawSetPacketHandler(Handler);	//coto: required for intercepting/processing of [n-w]ifi frames into emu
-	u32 wifi_pass = Wifi_Init(WIFIINIT_OPTION_USELED);	//fup
+	if(MyIPC->dswifiSrv.dsnwifisrv_mode == dswifi_nifimode){
+		Wifi_RawSetPacketHandler(Handler);
+	}
+	u32 wifi_pass = Wifi_Init(WIFIINIT_OPTION_USELED);
 	
 	if(!wifi_pass) return false;
 

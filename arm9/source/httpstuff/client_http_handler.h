@@ -24,13 +24,12 @@ typedef struct {
 	
 	
 	
-	
 	//host socket entry
     struct hostent myhost;
     
     bool wifi_enabled;
     unsigned char http_buffer[4 * 1024];
-    bool sent_wait_for_recv;	//false: ready to send / true: already sent message: recv only then toggles back    
+    
 
 } client_http_handler;
 

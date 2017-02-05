@@ -82,7 +82,7 @@ typedef struct dsnwifisrvStr {
 	bool dswifi_setup;	//false: not setup / true: setup already
 	
 	u8 dsnwifisrv_stat;	//ds_searching_for_multi / ds_multiplay
-	bool sent_wait_for_recv;	//false: ready to send / true: already sent message: recv only then toggles back    
+	
 
 }TdsnwifisrvStr;
 

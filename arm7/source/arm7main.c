@@ -338,15 +338,6 @@ inline void readAPU()
 	IPC_APUR = IPC_APUW;
 }
 
-//unused
-/*
-void interrupthandler() {
-	u32 flags=REG_IF&REG_IE;
-	if(flags&IRQ_TIMER1)
-		soundinterrupt();
-}
-*/
-
 void nesmain() {
 	NESAudioFrequencySet(MIXFREQ);
 	NESTerminate();

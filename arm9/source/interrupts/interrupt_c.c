@@ -35,7 +35,6 @@ void vcounter(){
 	//sendcmd();	//exception here cant
 		
 	//consoletext(64*2-32,"     vcount!__________________________",0);	//works
-    //REG_IF = IRQ_VCOUNT;
 }
 
 bool nds_vblank = false;
@@ -77,7 +76,6 @@ void Vblank() {
 	}
 	
 	
-	//REG_IF = IRQ_VBLANK;
 }
 
 //---------------------------------------------------------------------------------
@@ -88,7 +86,6 @@ void Hblank() {
 	//(*__hblankhook)();
     //iprintf("hblank! \n");
     
-	//REG_IF = IRQ_HBLANK;
 }
 
 

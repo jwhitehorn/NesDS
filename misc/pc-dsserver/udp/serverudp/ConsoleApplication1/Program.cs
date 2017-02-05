@@ -159,7 +159,7 @@ namespace ConsoleApplication1
                     //for assigning ids
                     Random random_inst = new Random();
 
-                    Console.WriteLine("UDPMSG:" + received.Message+" \n");
+                    //Console.WriteLine("UDPMSG:" + received.Message+" \n");
                     //dsnotaware-NIFINintendoDS-IP-PORT
                     //Console.WriteLine("RECVUDPMSG + \n");
 

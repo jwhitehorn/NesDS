@@ -307,10 +307,6 @@ refreshNESjoypads:	@call every frame
 	cmp r2, #5
 	bcs multi_nifi
 	
-	cmp r2, #7 			@wifi_shared.h
-	bcs multi_nifi
-	
-	
 	ldr r1,=IPC_KEYS		@read the NDS button status
 	ldr r1,[r1]
 

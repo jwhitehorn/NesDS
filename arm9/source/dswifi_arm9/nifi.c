@@ -205,8 +205,7 @@ inline int Wifi_RawTxFrame_WIFI(u8 datalen, u8 * data) {
 					sprintf(buf2,"dsaware-%s-bindOK-%d-%s-",status,LISTENER_PORT,(char*)print_ip((u32)Wifi_GetIP()));
 					//consoletext(64*2-32,(char *)&buf2[0],0);
 					sendto(client_http_handler_context.socket_id__multi_notconnected,buf2,sizeof(buf2),0,(struct sockaddr *)&client_http_handler_context.server_addr,sizeof(client_http_handler_context.server_addr));
-				
-					//on ack (server) we should receive both DS connected
+					
 				}
 			}
 			break;
@@ -215,31 +214,14 @@ inline int Wifi_RawTxFrame_WIFI(u8 datalen, u8 * data) {
 			//#last:connected!
 			case(ds_netplay_host):case(ds_netplay_guest):{
 				//send NIFI Frame here
-				
-				//debug	//ok
-				/*
-				char buf3[64];
-				if(MyIPC->dswifiSrv.dsnwifisrv_stat == ds_netplay_host){
-					sprintf(buf3,"dsconnected-host-");
-				}
-				
-				else if(MyIPC->dswifiSrv.dsnwifisrv_stat == ds_netplay_guest){
-					sprintf(buf3,"dsconnected-guest-");
-				}
-				
-				sendto(client_http_handler_context.socket_multi_sender,buf3,sizeof(buf3),0,(struct sockaddr *)&client_http_handler_context.sain_sender,sizeof(client_http_handler_context.sain_sender));
-				*/
-				
 				//int i=1;
 				//i=ioctl(client_http_handler_context.socket_multi_sender,FIONBIO,&i); // set non-blocking port
 				//data[0] = (u8)(rand()&0xff);
 				sendto(client_http_handler_context.socket_multi_sender,data,datalen,0,(struct sockaddr *)&client_http_handler_context.sain_sender,sizeof(client_http_handler_context.sain_sender));
-				
 			}
 			break;
 		}
 		
-		//MyIPC->dswifiSrv.sent_wait_for_recv = true;
 	}
 	return 0;
 }

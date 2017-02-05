@@ -68,9 +68,6 @@ int nifi_keys_sync;	//(guestnifikeys & hostnifikeys)
 //memcpy ( void * destination, const void * source, size_t num );
 inline void sendcmd(u8 * databuf_src)
 {
-	//detect nifi- or wifi mode
-	//if(MyIPC->dswifiSrv.dsnwifisrv_stat == ds_netplay_host){
-	
 	//0-1-2 ID:
 	memcpy((u8*)(databuf_src + 3), (u8*)&nifi_cmd, sizeof(nifi_cmd));
 	
@@ -400,13 +397,6 @@ inline bool do_multi()
 					
 					struct sockaddr_in *addr_in2= (struct sockaddr_in *)&client_http_handler_context.sain_sender;
 					char *IP_string_sender = inet_ntoa(addr_in2->sin_addr);
-						
-					
-					//debug //WORKS SO FAR
-					//char buf[64];
-					//sprintf(buf,"DS1: %s - DS2: %s",IP_string_sender, (const char*)print_ip((u32)Wifi_GetIP()));
-					//consoletext(64*2-32,(char *)&buf[0],0);
-					
 					
 					
 					//bind ThisIP(each DS network hardware) against the current DS UDP port
@@ -445,42 +435,9 @@ inline bool do_multi()
 							//nifi_stat = 2;
 						}
 						
-						//read IP from sock interface binded
-						//struct sockaddr_in *addr_in2= (struct sockaddr_in *)&client_http_handler_context.sain_sender;
-						//char *IP_string_sender = inet_ntoa(addr_in2->sin_addr);
-						
-						//char buf2[64];
-						//sprintf(buf2,"////////////////////////IP read from sender socket: %s",(const char *)IP_string_sender);
-						//consoletext(64*2-32,(char *)&buf2[0],0);
-						
-						//char buf2[64];
-						//sprintf(buf2,"////////////////////////MY IP: %s / Read from server: %s ",(char*)print_ip((u32)Wifi_GetIP()),(const char *)tokens[1]);
-						//consoletext(64*2-32,(char *)&buf2[0],0);
-						
-						//bind sender? does not work with UDP Datagram socket format (UDP basically)
-						/*
-						int ret = bind(client_http_handler_context.socket_multi_sender,(struct sockaddr *)&client_http_handler_context.sain_sender,sizeof(client_http_handler_context.sain_sender));
-						
-						if(ret == -1){
-							sprintf(buf,"%s \n","[SERVERNDS]binding error");
-							consoletext(64*2-32,(char *)&buf[0],0);
-						}
-						else if(ret == 0){
-							sprintf(buf,"%s \n","[SERVERNDS]binding OK");
-							consoletext(64*2-32,(char *)&buf[0],0);
-						}
-					
-					*/
+						//note: bind UDPsender?: does not work with UDP Datagram socket format (UDP basically)
 					}
 					
-					//debug //WORKS SO FAR
-					/*
-					char buf[64];
-					sprintf(buf,"DS1: %s - DS2: %s",IP_string_sender, (const char*)print_ip((u32)Wifi_GetIP()));
-					consoletext(64*2-32,(char *)&buf[0],0);
-					*/
-					
-					//void * memcpy ( void * destination, const void * source, size_t num );
 				}
 				
 			}
@@ -488,17 +445,6 @@ inline bool do_multi()
 			
 			//servercheck phase acknow
 			case(ds_netplay_host_servercheck):case(ds_netplay_guest_servercheck):{
-				/*
-				//Server aware
-				if(strncmp((const char *)cmd, (const char *)"debug", 5) == 0){
-					
-					//works on recv
-					char buf2[64];
-					sprintf(buf2,"////////////////////////debug cmd:%s",incomingbuf);
-					consoletext(64*2-32,(char *)&buf2[0],0);
-					
-				}
-				*/
 				
 				//Server UDP Handler listener
 				volatile unsigned long available_ds_server;
@@ -520,30 +466,6 @@ inline bool do_multi()
 				
 				if(strncmp((const char *)cmd, (const char *)"dsconnect", 9) == 0){
 					
-					/*
-					//validate it is the same IP we binded to earlier
-					struct sockaddr_in *addr_in= (struct sockaddr_in *)&client_http_handler_context.sain_sender;
-					char *IP_string_ds_multi = inet_ntoa(addr_in->sin_addr);
-					
-					//server send other NDS ip format: dsconnect-IP- (last "-" goes as well!)
-					char **tokens;
-					int count, i;
-					//const char *str = "JAN,FEB,MAR,APR,MAY,JUN,JUL,AUG,SEP,OCT,NOV,DEC";
-					volatile char str[256];
-					memcpy ( (u8*)str, (u8*)incomingbuf, 256);
-
-					count = split ((const char*)str, '-', &tokens);
-					for (i = 0; i < count; i++) {
-						//then send back "dsaware"
-						//char outgoingbuf[64];
-						//sprintf(outgoingbuf,"%s",tokens[i]);
-						//sendto(client_http_handler_context.socket_id__multi_notconnected,outgoingbuf,strlen(outgoingbuf),0,(struct sockaddr *)&client_http_handler_context.server_addr,sizeof(client_http_handler_context.server_addr));
-					}
-					
-					//tokens[0];	//cmd
-					//tokens[1];	//IP from DS MULTI TO CONNECT(not ours)
-					*/
-					
 					int LISTENER_PORT 	=	0;
 					int SENDER_PORT		=	0;
 					if(MyIPC->dswifiSrv.dsnwifisrv_stat == ds_netplay_host_servercheck){
@@ -555,20 +477,15 @@ inline bool do_multi()
 						SENDER_PORT		=	(int)NDSMULTI_UDP_PORT_HOST;
 					}
 					
-					if(MyIPC->dswifiSrv.dsnwifisrv_stat == ds_netplay_host_servercheck){
-						
-						//works on recv
-						
+					if(MyIPC->dswifiSrv.dsnwifisrv_stat == ds_netplay_host_servercheck){	
 						char buf2[64];
 						sprintf(buf2,"//////////DSCONNECTED[HOST]-PORT:%d",LISTENER_PORT);
 						consoletext(64*2-32,(char *)&buf2[0],0);
-						
 						
 						MyIPC->dswifiSrv.dsnwifisrv_stat = ds_netplay_host;
 						nifi_stat = 5;
 					}
 					else if(MyIPC->dswifiSrv.dsnwifisrv_stat == ds_netplay_guest_servercheck){
-						
 						char buf2[64];
 						sprintf(buf2,"//////////DSCONNECTED[GUEST]-PORT:%d",LISTENER_PORT);
 						consoletext(64*2-32,(char *)&buf2[0],0);
@@ -675,8 +592,6 @@ inline bool do_multi()
 				}
 				nifi_cmd = MP_NFEN;
 				if(count++ > 30) {			//send a flag every second to search a host.
-					
-					
 					switch(MyIPC->dswifiSrv.dsnwifisrv_mode){
 						case dswifi_nifimode:{
 							Wifi_RawTxFrame_NIFI(sizeof(nifitoken), 0x0014, (unsigned short *)nifitoken);
