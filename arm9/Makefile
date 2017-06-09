@@ -17,7 +17,6 @@ include $(DEVKITARM)/ds_rules
 BUILD		:=	build
 SOURCES		:=	source source/mappers data source/zip   \
                 source/wireless/	\
-                source/disk/	\
                 ../common/	\
                 ../common/source/
 				
@@ -25,7 +24,6 @@ INCLUDES	:=	include/ \
                 ../include/ \
                 data/   \
                 source/nes/ \
-                source/disk/	\
 				../common/source
 DATA		:=
 
@@ -50,7 +48,7 @@ LDFLAGS	=	-specs=ds_arm9.specs $(ARCH) -Wl,-Map,$(notdir $*.map)
 #---------------------------------------------------------------------------------
 # any extra libraries we wish to link with the project
 #---------------------------------------------------------------------------------
-LIBS	:= -lnds9
+LIBS	:= -lfat -lnds9
  
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing

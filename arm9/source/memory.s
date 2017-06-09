@@ -175,7 +175,7 @@ nes_region:				@NES_RAM should be 0x400 bytes aligned....
 rom_files:				@not used when testing
 rom_start:				@not used when testing
 romebd_s:
-	.incbin "fm.nes"
+	.incbin "rom.nes"
 
 .section .bss, "aw"
 .align 4
@@ -198,6 +198,7 @@ NES_DRAM:				@if the game is a FDS one, this is available. otherwise not.
 	.skip 0x8000
 NES_DISK:				@same to NES_DRAM
 	.skip 0x40000
-	.skip ROM_MAX_SIZE - 0x40000 - 16 - 0x8000 - 0x40000		@the rest room for rom file.
+	@ Memory system needs reworked for TWL mode and latest devkitarm.
+	@.skip ROM_MAX_SIZE - 0x40000 - 16 - 0x8000 - 0x40000		@the rest room for rom file.
 
 #endif
