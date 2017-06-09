@@ -1,3 +1,14 @@
+NesDS TWL Edition:
+
+I made some minor changes to allow using this on DSi via exploits on TWL mode DSiWare. Note that Wifi will not work on this build most likely.
+This is due to TWL mode wifi not having drivers available for it yet. Also due to limitations imposed by devkitarm r46 the current memory layout this emulator sets up won't normally work.
+I've had to disable a line of code in arm9/source/memory.s to prevent it from reserving too much space that would trigger a error about going beyond available ewram for arm9.
+
+A full reworking of the memory stuff is needed to take advantage of TWL mode ram space. But that's beyond my abilities. Hopefully the original auther of this or osmoen else can fix that. :P
+
+For now this should boot most roms under 512KB or so. So finally, DSi has a version of NesDS that works from SD! :D
+
+
 HOW-TO COMPILE:
 
 Create a new folder, copy source code like you would on any DS project
