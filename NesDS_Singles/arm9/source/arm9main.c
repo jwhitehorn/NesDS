@@ -150,14 +150,12 @@ int main(int _argc, char **_argv) {
 	*/
 #else
 	do_romebd();
+	// powerOff(PM_BACKLIGHT_BOTTOM);
 #endif
 
 	//__emuflags |= PALSYNC;
 
 	__emuflags |= SPLINE;
-
-	// This version of NesDS has no GUI. Turn off unused screen for power saving.
-	powerOff(PM_BACKLIGHT_BOTTOM);
 
 	while(1) { // main loop to do the emulation
 		framecount++;

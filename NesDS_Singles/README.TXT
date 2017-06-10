@@ -8,4 +8,4 @@ Note that fat libraries have been disabled and this does not support saves/save 
 
 Release binaries will not be made available for this. You will need to provide your own roms and compile this yourself.
 
-This will only boot a single rom. Put the game in source/arm9/data and rename to "rom.nes". Then compile using make.
+This will only boot a single rom. Put the game in arm9/data and rename to "rom.nes". Then compile using make.
