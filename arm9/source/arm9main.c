@@ -24,7 +24,7 @@ void do_romebd()
 void showversion()
 {
 	memset((void *)(SUB_BG),0,64*3);
-	consoletext(58*2-32,"nesDS 1.3c TWL Edition ________________________________",0);
+	consoletext(58*2-32,"nesDS 1.3d TWL Edition ________________________________",0);
 }
 
 /*****************************
