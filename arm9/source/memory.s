@@ -198,7 +198,6 @@ NES_DRAM:				@if the game is a FDS one, this is available. otherwise not.
 	.skip 0x8000
 NES_DISK:				@same to NES_DRAM
 	.skip 0x40000
-	@ Memory system needs reworked for TWL mode and latest devkitarm.
-	@.skip ROM_MAX_SIZE - 0x40000 - 16 - 0x8000 - 0x40000		@the rest room for rom file.
+	.skip ROM_MAX_SIZE - 0x40000 - 16 - 0x8000 - 0x40000		@the rest room for rom file.
 
 #endif
