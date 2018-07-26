@@ -175,7 +175,7 @@ nes_region:				@NES_RAM should be 0x400 bytes aligned....
 rom_files:				@not used when testing
 rom_start:				@not used when testing
 romebd_s:
-	.incbin "rom.nes"
+	.incbin "fm.nes"
 
 .section .bss, "aw"
 .align 4

@@ -1,29 +1,27 @@
-NesDS TWL Edition:
-
-I made some minor changes to allow using this on DSi via exploits on TWL mode DSiWare. Note that Wifi will not work on this build most likely.
-This is due to TWL mode wifi not having drivers available for it yet. Also due to limitations imposed by devkitarm r46 the current memory layout this emulator sets up won't normally work.
-I've had to disable a line of code in arm9/source/memory.s to prevent it from reserving too much space that would trigger a error about going beyond available ewram for arm9.
-
-A full reworking of the memory stuff is needed to take advantage of TWL mode ram space. But that's beyond my abilities. Hopefully the original auther of this or osmoen else can fix that. :P
-
-For now this should boot most roms under 512KB or so. So finally, DSi has a version of NesDS that works from SD! :D
-
-
-HOW-TO COMPILE:
-
-Create a new folder, copy source code like you would on any DS project
-open MSYS and MAKE. (Requires devkitPro)
-
--
-
 nesDS, using toolchain devkitARM.
 We spent a few weeks to port the original nesDS project to the GCC toolchain. Then we made a new EX Edition, and made it possible to emulate the the NES/FC games that the origianl nesDS didn't work well.
 Since the 0.40 version, I ported the code of EX Edtion to the original nesDS, now it is the best nes-emulator~!
 
 If you found any bug on nesDS, just tell me. Maybe I could fix it.
 
+2018-7-25
+Apache Thunder:
+
+* NesDS TWL Edition * 
+(currently maintained as a seperate branch)
+
+I made some minor changes to allow using this on DSi via exploits on TWL mode DSiWare.
+Though primarily intended to be booted directly from System Menu via low level exploit like Unlaunch and HiyaCFW.
+
+2018-5-04
+coto: 
+stock NesDS1.3c sources: 
+- currently fast-forward / rewind features working (the one that came with NesDS)
+- fixed exception due to buffer overflow in Rom Database
+- using very old nifi code (the one that came with NesDS)
+
 2016-5-03
-coto: nifi is back (rollback changes to DSWIFI 0.3.13), fixed a guru meditation screen due to buffer overflow on romdb rom adjustment, becoming NesDS1.3c
+coto: nifi is back (rollback changes to DSWIFI 0.3.13), fixed a guru meditation screen due to buffer overflow on romdb rom adjustment, becoming NesDS1.3b
 
 2011-3-23
 avenir contributed some codes to version 0.45a.

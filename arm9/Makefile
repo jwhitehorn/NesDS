@@ -16,15 +16,15 @@ include $(DEVKITARM)/ds_rules
 #---------------------------------------------------------------------------------
 BUILD		:=	build
 SOURCES		:=	source source/mappers data source/zip   \
-                source/wireless/	\
-                ../common/	\
-                ../common/source/
-				
+                source/dswifi_arm9/ \
+                source/disk/    \
+                ../common/    \
+                ../common/dswifi/
 INCLUDES	:=	include/ \
                 ../include/ \
                 data/   \
                 source/nes/ \
-				../common/source
+                source/disk  
 DATA		:=
 
 
@@ -48,7 +48,7 @@ LDFLAGS	=	-specs=dsi_arm9.specs $(ARCH) -Wl,-Map,$(notdir $*.map)
 #---------------------------------------------------------------------------------
 # any extra libraries we wish to link with the project
 #---------------------------------------------------------------------------------
-LIBS	:= -lfat -lnds9
+LIBS	:=	-lfat -ldswifi9 -lnds9
  
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
