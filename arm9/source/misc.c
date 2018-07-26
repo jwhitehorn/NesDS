@@ -277,7 +277,7 @@ void do_quickf(int func)
 		break;
 	case 2:
 		__emuflags &= ~LIGHTGUN;
-		do_rommenu();
+		//do_rommenu();
 		break;
 	case 3:
 		joyflags^=B_A_SWAP;

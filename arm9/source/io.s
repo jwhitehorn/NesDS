@@ -14,7 +14,7 @@
 	.global nifi_keys
 	.global ad_scale
 @---------------------------------------------------------------------------------
-.section .text,"ax"
+.section .itcm,"ax"
 @---------------------------------------------------------------------------------
 IO_reset:
 @---------------------------------------------------------------------------------
@@ -302,8 +302,9 @@ spriteY_lookup2: .skip 512
 refreshNESjoypads:	@call every frame
 @used to refresh joypad button status
 @---------------------------------------------------------------------------------
-	ldr r2, =nifi_stat
-	ldr r2, [r2]
+	//ldr r2, =nifi_stat
+	//ldr r2, [r2]
+	mov r2, #0
 	cmp r2, #5
 	bcs multi_nifi
 
@@ -470,8 +471,9 @@ bright:
 	.byte 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0 
 @---------------------------------------------------------------------------------
 multi_nifi:
-	ldr r1,=nifi_keys		@read the NDS button status
-	ldr r1,[r1]
+	//ldr r1,=nifi_keys		@read the NDS button status
+	//ldr r1,[r1]
+	mov r1, #0
 
 	@-> R L D U St Sl B A
 

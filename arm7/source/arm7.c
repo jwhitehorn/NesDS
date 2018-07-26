@@ -2,18 +2,12 @@
 	derived from the default ARM7 core
 ---------------------------------------------------------------------------------*/
 #include <nds.h>
-#include <dswifi7.h>
-//#include <maxmod7.h>
 #include "ds_misc.h"
 #include "c_defs.h"
 
 void nesmain();
 
-//---------------------------------------------------------------------------------
-void VblankHandler(void) {
-//---------------------------------------------------------------------------------
-	Wifi_Update();
-}
+void VblankHandler(void) { }
 
 int ipc_region = 0;
 
@@ -44,8 +38,6 @@ int main() {
 	initClockIRQ();
 
 	installSystemFIFO();
-	installWifiFIFO();
-	//irqSet(IRQ_VCOUNT, VcountHandler);
 	irqSet(IRQ_VBLANK, VblankHandler);
 
 	irqEnable(IRQ_TIMER1 | IRQ_VBLANK | IRQ_NETWORK);

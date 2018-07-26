@@ -22,7 +22,7 @@ void menu_file_loadrom(void)
 	menu_draw = 0;
 	menu_depth = 1;
 	last_menu = menu_array[0];
-	do_rommenu();
+	//do_rommenu();
 }
 
 void menu_file_savestate(void)
@@ -506,12 +506,12 @@ void menu_nifi_start(void)
 	lastbutton = NULL;
 	
 	consoletext(64*19+2, "Nifi Status:", 0);
-	consoletext(64*20+2, nifi_chars[nifi_stat], 0);
+	//consoletext(64*20+2, nifi_chars[nifi_stat], 0);
 }
 
 void menu_nifi_action(void)
 {
-	do_top_menu();
+	/*do_top_menu();
 
 	if(lastbutton && touchstate == 4) {
 		if(lastbutton_type == 2) {
@@ -530,7 +530,7 @@ void menu_nifi_action(void)
 			}
 			consoletext(64*20+2, nifi_chars[nifi_stat], 0);
 		}
-	}
+	}*/
 }
 
 
@@ -752,22 +752,22 @@ void menu_cheat_list_start(void)
 void menu_search_action(void)
 {
 	do_top_menu();
-	addcheat();
+	//addcheat();
 }
 
 void menu_list_action(void)
 {
 	do_top_menu();
-	cheatlist();
+	//cheatlist();
 }
 
 void menu_cht_action(void)
 {
 	menu_stat = 3;
-	if(lastbutton_cnt & 1)
-		load_cheat();
-	else
-		save_cheat();
+	//if(lastbutton_cnt & 1)
+	//	load_cheat();
+	//else
+	//	save_cheat();
 }
 
 void menu_debug_start(void)

@@ -1,11 +1,12 @@
 #include <nds.h>
-#include <fat.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <filesystem.h>
 #include <unistd.h>
 #include "ds_misc.h"
 #include "c_defs.h"
 //frameskip min = 1, max = xxxxxx....
+// Old value = 3
 int soft_frameskip = 3;
 #define SOFT_FRAMESKIP soft_frameskip
 
@@ -21,11 +22,13 @@ void do_romebd()
 }	
 #endif
 
+#ifndef ROM_EMBEDED
 void showversion()
 {
 	memset((void *)(SUB_BG),0,64*3);
-	consoletext(58*2-32,"nesDS 1.3d TWL Edition ________________________________",0);
+	consoletext(64*2-32,"     nesDS 1.3a ________________________________",0);
 }
+#endif
 
 /*****************************
 * name:			vblankinterrupt
@@ -106,6 +109,7 @@ int subscreen_stat=-1;				//short-cuts will change its value.
 int argc;
 char **argv;
 int main(int _argc, char **_argv) {
+	
 	int framecount=0;
 	int sramcount=0;
 
@@ -116,9 +120,8 @@ int main(int _argc, char **_argv) {
 
 	DS_init(); //DS init.
 #ifndef ROM_EMBEDED
-	active_interface = fatInitDefault(); //init file operations to your external card.
-
-	initNiFi();
+	// Stripped fat.c include. Re-add before attempting to re-enable.
+	// active_interface = fatInitDefault(); //init file operations to your external card.
 #endif
 	EMU_Init(); //emulation init.
 
@@ -132,22 +135,27 @@ int main(int _argc, char **_argv) {
 	IPC_REG4015 = 0;
 
 	consoleinit(); //init subscreen to show chars.
-	crcinit();	//init the crc table.
+	//crcinit();	//init the crc table.
 
 	//pre-alocate memory....
 	//IPC_FILES = malloc(MAXFILES * 256 + MAXFILES * 4);
 	//IPC_ROM = malloc(ROM_MAX_SIZE);
 
 #ifndef ROM_EMBEDED
+	/*
 	if(!bootext()) {
-		//chdir("/");
+		chdir("/");
 		do_rommenu(); //show a menu selecting rom files.
 	}
+	*/
 #else
 	do_romebd();
+	// powerOff(PM_BACKLIGHT_BOTTOM);
 #endif
 
 	//__emuflags |= PALSYNC;
+
+	__emuflags |= SPLINE;
 
 	while(1) { // main loop to do the emulation
 		framecount++;
@@ -164,6 +172,11 @@ int main(int _argc, char **_argv) {
 
 		scanKeys();
 		IPC_KEYS = keysCurrent();
+		if(IPC_KEYS & KEY_A)
+			IPC_KEYS |= KEY_B;
+		if(IPC_KEYS & KEY_X)
+			IPC_KEYS |= KEY_Y;
+		IPC_KEYS &= ~(KEY_A | KEY_X);
 
 		//change nsf states
 		if(__emuflags & NSFFILE) {
@@ -207,14 +220,14 @@ int main(int _argc, char **_argv) {
 			}
 		}
 
-		touch_update(); // do menu functions.
-		do_menu();	//do control menu.
+		//touch_update(); // do menu functions.
+		//do_menu();	//do control menu.
 	
-		do_multi();
-		if(nifi_stat == 0 || nifi_stat >= 5)
+		//do_multi();
+		//if(nifi_stat == 0 || nifi_stat >= 5)
 			play(); //emulate a frame of the NES game.
-		else 
-			swiWaitForVBlank();
+		//else 
+		//	swiWaitForVBlank();
 	}
 }
 
@@ -241,14 +254,14 @@ void play() {
 	int forward = 0;
 	int backward = 0;
 
-	do_cheat();
+	//do_cheat();
 
 	global_playcount++;
 	if(global_playcount > 6)
 		global_playcount = 0;
 
-	if(nifi_stat)
-		__emuflags &= ~(FASTFORWARD | REWIND);		//when nifi enabled, disable the fastforward & rewind.
+	//if(nifi_stat)
+	__emuflags &= ~(FASTFORWARD | REWIND);		//when nifi enabled, disable the fastforward & rewind.
 
 	forward = __emuflags & FASTFORWARD;
 	backward = __emuflags & REWIND;
@@ -330,3 +343,4 @@ void play() {
 
 	__emuflags &= ~(FASTFORWARD | REWIND);
 }
+

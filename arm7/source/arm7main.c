@@ -353,3 +353,4 @@ void nesmain() {
 	irqSet(IRQ_TIMER1, soundinterrupt);
 	//irqSet(IRQ_LID, lidinterrupt);
 }
+

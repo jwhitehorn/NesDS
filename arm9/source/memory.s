@@ -20,7 +20,7 @@
 	.global rom_WE0
 	.global filler
 	.global NES_DRAM
-	.global NES_DISK
+//	.global NES_DISK
 
 	.global rom_files
 	.global rom_start
@@ -33,7 +33,7 @@
 #endif
 
 @---------------------------------------------------------------------------------
-.section .text,"ax"
+.section .itcm,"ax"
 @---------------------------------------------------------------------------------
 empty_R:		@read bad address (error)
 @---------------------------------------------------------------------------------
@@ -175,14 +175,14 @@ nes_region:				@NES_RAM should be 0x400 bytes aligned....
 rom_files:				@not used when testing
 rom_start:				@not used when testing
 romebd_s:
-	.incbin "fm.nes"
+	.incbin "rom.nes"
 
 .section .bss, "aw"
 .align 4
 NES_DRAM:
 	.skip 0x8000
-NES_DISK:
-	.skip 0x40000
+//NES_DISK:
+//	.skip 0x40000
 
 @-----------
 #else
@@ -196,8 +196,8 @@ rom_start:
 	.skip 0x40000 + 16		@this is the bigest size for FDS game.
 NES_DRAM:				@if the game is a FDS one, this is available. otherwise not.
 	.skip 0x8000
-NES_DISK:				@same to NES_DRAM
-	.skip 0x40000
-	.skip ROM_MAX_SIZE - 0x40000 - 16 - 0x8000 - 0x40000		@the rest room for rom file.
+//NES_DISK:				@same to NES_DRAM
+//	.skip 0x40000
+//	.skip ROM_MAX_SIZE - 0x40000 - 16 - 0x8000 - 0x40000		@the rest room for rom file.
 
 #endif

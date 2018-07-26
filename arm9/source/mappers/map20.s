@@ -6,7 +6,7 @@
 @---------------------------------------------------------------------------------
 	.global mapper20init
 	.global fdscmdwrite
-	.global diskbios
+	//.global diskbios
 	irq_enable	= mapperdata
 	irq_repeat	= mapperdata + 1
 	irq_occur	= mapperdata + 2
@@ -116,7 +116,7 @@ mapper20init:
 	str_ r0, memmap_tbl + 16
 	str_ r0, memmap_tbl + 20
 	str_ r0, memmap_tbl + 24
-	ldr r0, =diskbios - 0xE000
+	ldr r0, =0//diskbios - 0xE000
 	str_ r0, memmap_tbl + 28
 
 	ldr r2, =0xFFFFFFFF
@@ -129,7 +129,7 @@ mapper20init:
 
 	ldr_ r2, rombase
 	str_ r2, disk
-	ldr r1, =NES_DISK
+	ldr r1, =0 //NES_DISK
 	str_ r1, disk_w
 
 	adr r0, exread
@@ -681,7 +681,7 @@ excmd_insert:
 	add r3, r1, r2
 	str_ r3, disk
 
-	ldr r1, =NES_DISK
+	ldr r1, =0 //NES_DISK
 	add r3, r1, r2
 	str_ r3, disk_w
 

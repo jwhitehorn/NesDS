@@ -6,15 +6,13 @@ $(error "Please set DEVKITARM in your environment. export DEVKITARM=<path to>dev
 endif
 
 include $(DEVKITARM)/ds_rules
-export LIBFAT := $(DEVKITARM)/libfat
-export LIBFILESYSTEM := $(DEVKITARM)/libfilesystem
 
-export GAME_TITLE		:=	nesDS TWL Edition
-export GAME_SUBTITLE1	:=	Version 1.3d
-export GAME_SUBTITLE2	:=	Enjoy yourself!
-export GAME_ICON		:=	$(CURDIR)/icon.bmp
-export TARGET			:=	nesDS_twl
-export TOPDIR			:=	$(CURDIR)
+export GAME_TITLE		:=	Insert Game Title Here
+export GAME_SUBTITLE1	:=	NesDS Singles
+export GAME_SUBTITLE2	:=	By Gericom & Apache Thunder
+export GAME_ICON	:=	$(CURDIR)/icon.bmp
+export TARGET		:=	nesDS_Title
+export TOPDIR		:=	$(CURDIR)
 
 
 .PHONY: arm7/$(TARGET).elf arm9/$(TARGET).elf
@@ -26,9 +24,7 @@ all: $(TARGET).nds
 
 #---------------------------------------------------------------------------------
 $(TARGET).nds	:	arm7/$(TARGET).elf arm9/$(TARGET).elf
-	@ndstool -c $(TARGET).nds -7 arm7/$(TARGET).elf -9 arm9/$(TARGET).elf \
-			 -b $(GAME_ICON) "$(GAME_TITLE);$(GAME_SUBTITLE1);$(GAME_SUBTITLE2)" \
-			 -g NNES 01 "TWL NESDS" -z 80040000 -u 00030004 -a 00000010 -p 0001
+	@ndstool -c $(TARGET).nds -7 arm7/$(TARGET).elf -9 arm9/$(TARGET).elf -b $(GAME_ICON) "$(GAME_TITLE);$(GAME_SUBTITLE1);$(GAME_SUBTITLE2)"
 	@echo built ... $(notdir $@)
 
 #---------------------------------------------------------------------------------
@@ -43,4 +39,4 @@ arm9/$(TARGET).elf:
 clean:
 	$(MAKE) -C arm9 clean
 	$(MAKE) -C arm7 clean
-	rm -f $(TARGET).arm7 $(TARGET).arm9 $(TARGET).nds
+	rm -f $(TARGET).arm7 $(TARGET).arm9

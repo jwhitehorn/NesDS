@@ -660,7 +660,7 @@ void do_menu()
 {
 	int i;
 
-	do_gesture();
+	//do_gesture();
 	
 	if(menu_stat == 0 && touchstate != 4) {
 		return;
