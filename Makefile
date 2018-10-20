@@ -6,15 +6,16 @@ $(error "Please set DEVKITARM in your environment. export DEVKITARM=<path to>dev
 endif
 
 include $(DEVKITARM)/ds_rules
+export LIBWIFI := $(DEVKITARM)/libwifi
 export LIBFAT := $(DEVKITARM)/libfat
 export LIBFILESYSTEM := $(DEVKITARM)/libfilesystem
 
-export GAME_TITLE		:=	nesDS TWL Edition
-export GAME_SUBTITLE1	:=	Version 1.3d
+export GAME_TITLE	:=	nesDS
+export GAME_SUBTITLE1	:=	Version 1.3c
 export GAME_SUBTITLE2	:=	Enjoy yourself!
-export GAME_ICON		:=	$(CURDIR)/icon.bmp
-export TARGET			:=	nesDS_twl
-export TOPDIR			:=	$(CURDIR)
+export GAME_ICON	:=	$(CURDIR)/icon.bmp
+export TARGET		:=	nesDS
+export TOPDIR		:=	$(CURDIR)
 
 
 .PHONY: arm7/$(TARGET).elf arm9/$(TARGET).elf

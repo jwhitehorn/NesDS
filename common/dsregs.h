@@ -47,7 +47,7 @@ SOFTWARE.
 // video registers
 #define		DISPCNT		(*((u32 volatile *) 0x04000000))
 #define		DISPSTAT	(*((u16 volatile *) 0x04000004))
-#define		VCOUNT		(*((u16 volatile *) 0x04000006))
+//#define		VCOUNT		(*((u16 volatile *) 0x04000006))
 #define		BG0CNT		(*((u16 volatile *) 0x04000008))
 #define		BG1CNT		(*((u16 volatile *) 0x0400000A))
 #define		BG2CNT		(*((u16 volatile *) 0x0400000C))
@@ -85,7 +85,7 @@ SOFTWARE.
 
 #define		DISPCNT2	(*((u32 volatile *) 0x04001000))
 #define		DISPSTAT2	(*((u16 volatile *) 0x04001004))
-#define		VCOUNT2		(*((u16 volatile *) 0x04001006))
+//#define		VCOUNT2		(*((u16 volatile *) 0x04001006))
 #define		BG0CNT2		(*((u16 volatile *) 0x04001008))
 #define		BG1CNT2		(*((u16 volatile *) 0x0400100A))
 #define		BG2CNT2		(*((u16 volatile *) 0x0400100C))

@@ -15,17 +15,14 @@ include $(DEVKITARM)/ds_rules
 # all directories are relative to this makefile
 #---------------------------------------------------------------------------------
 BUILD		:=	build
-SOURCES		:=	source  \
-                source/wireless/    \
-                ../common/  \
-                ../common/dswifi
-INCLUDES	:=	include build ../include ../include/nds source/wireless
+SOURCES		:=	source  
+INCLUDES	:=	include build ../include ../include/nds
 DATA		:=
  
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
-ARCH	:=	#-mthumb-interwork
+ARCH	:=	-marm	-mthumb-interwork
 
 CFLAGS	:=	-Wall -O2 \
 		-mcpu=arm7tdmi -mtune=arm7tdmi -fomit-frame-pointer\
@@ -39,7 +36,7 @@ CXXFLAGS	:=	$(CFLAGS) -fno-rtti -fno-exceptions -fno-rtti
 ASFLAGS	:=	$(ARCH)
 LDFLAGS	=	-specs=ds_arm7.specs $(ARCH) -Wl,-Map,$(notdir $*).map
 
-LIBS	:=	-ldswifi7	-lnds7
+LIBS	:=	-ldswifi7 -lnds7
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing

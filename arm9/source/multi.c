@@ -1,5 +1,5 @@
 #include <nds.h>
-#include <dswifi9.h>
+#include "dswifi_arm9/wifi_arm9.h"
 #include <stdlib.h>
 #include <string.h>
 #include "ds_misc.h"
@@ -290,6 +290,8 @@ void do_multi()
 	framecount++;
 }
 
+
+//source: http://www.youwrite.com/greenacorn/jmedia/wifi_rawtxframe.c (a method that forges a nifi packet). Compatible with NesDS nifi protocol
 
 //int Wifi_RawTxFrameNIFI(u16 datalen, u16 rate, u16 * data): special method to send formatted NIFI frames, required by NesDS NIFI to work between connected DS consoles.
 // (DSWIFI's Wifi_RawTxFrame does not do this, so as a solution, the new method is replaced in codebase, while using standard DSWIFI provided by libnds)

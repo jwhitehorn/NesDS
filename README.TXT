@@ -1,27 +1,15 @@
-nesDS, using toolchain devkitARM.
+nesDS1.3c [NTR], using toolchain devkitARM r43 (/release folder NesDS.nds binary was compiled with it). 
+master branch is the one and only branch that uses fully libnds sources. (for TGDS support I won't add support as of now, too busy right now)
+
 We spent a few weeks to port the original nesDS project to the GCC toolchain. Then we made a new EX Edition, and made it possible to emulate the the NES/FC games that the origianl nesDS didn't work well.
 Since the 0.40 version, I ported the code of EX Edtion to the original nesDS, now it is the best nes-emulator~!
 
 If you found any bug on nesDS, just tell me. Maybe I could fix it.
 
-2018-7-25
-Apache Thunder:
-
-* NesDS TWL Edition * 
-(currently maintained as a seperate branch)
-
-I made some minor changes to allow using this on DSi via exploits on TWL mode DSiWare.
-Though primarily intended to be booted directly from System Menu via low level exploit like Unlaunch and HiyaCFW.
-
-2018-5-04
+08-14-2018 
 coto: 
-stock NesDS1.3c sources: 
-- currently fast-forward / rewind features working (the one that came with NesDS)
-- fixed exception due to buffer overflow in Rom Database
-- using very old nifi code (the one that came with NesDS)
-
-2016-5-03
-coto: nifi is back (rollback changes to DSWIFI 0.3.13), fixed a guru meditation screen due to buffer overflow on romdb rom adjustment, becoming NesDS1.3b
+	- nifi, sound, touchscreen works in NTR mode as of devkitARM r43. 
+	- fixed exception due to buffer overflow in Rom Database
 
 2011-3-23
 avenir contributed some codes to version 0.45a.
@@ -409,3 +397,55 @@ EX Edition made by huiminghao
 more credits:
 -------------
 avenir
+
+
+
+
+
+
+(License)
+nesDS is released into the PUBLIC DOMAIN.  You may do anything you want with it.
+If you make any changes you'd like to see added to the official version, please
+let me know.
+-- nesds@olimar.fea.st
+
+
+nesDS was compiled with ARM ADS 1.2.
+To build it, open the project file (nesDS.mcp) and click Project -> Make.
+
+
+---------------------------------------------------------
+Memory map:
+1ff8000-1ffffff: ITCM (6502 core, etc)
+2000000-23fffff: cached ram
+2400000-27fffff: uncached ram
+2800000-2803fff: DTCM (misc tables and data)
+--------------------------
+
+misc NES data		23f8000 -> 23fe000
+sound and DMA buffers	27fe000 -> 27ffc00	(uncached)
+firmware settings	23ffc00 -> ...
+IPC			27fff00 -> 2800000	(uncached)
+
+scratch memory is (Image$$EWRAM$$ZI$$Limit -> 23f8000), used for file list storage, rom storage, game recording
+
+other ptrs:
+	rombase = Image$$EWRAM$$ZI$$Limit
+	freemem_start = end of rom
+	freemem_end=23f8000
+	(all of freemem_start -> end is used for recording)
+
+---------------------------------
+VRAM:
+A=MAIN OBJ (128k)	6400000-641ffff
+B=MAIN BG (128k)	6040000-605ffff
+C=MAIN BG (128k)	6000000-601ffff
+D=MAIN BG (128k)	6020000-603ffff
+E
+F
+G
+H=SUB BG		6200000-6207fff
+I
+
+6000000-605e000	MAIN CHR (#? chr banks)
+605e000		MAIN SCR

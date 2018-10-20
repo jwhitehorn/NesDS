@@ -1,11 +1,17 @@
+@coto: fix compiler warnings by making sure ARM7/ARM9 uses correct SWP opcodes
+#ifdef ARM7
+	.cpu arm7tdmi
+#else
+	#ifdef ARM9
+		.cpu arm946e-s
+	#endif
+#endif
 
-	.text
-
-	.code 32
-
+.text
+.code 32
+.ARM 
 
 .GLOBL SLasm_Acquire, SLasm_Release   
-.ARM 
 SLasm_Acquire:					
    ldr r2,[r0]					
    cmp r2,#0					
@@ -39,4 +45,3 @@ SLasm_Release:
 
 	.pool
 	.end
-

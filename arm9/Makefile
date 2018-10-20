@@ -15,25 +15,17 @@ include $(DEVKITARM)/ds_rules
 # all directories are relative to this makefile
 #---------------------------------------------------------------------------------
 BUILD		:=	build
-SOURCES		:=	source source/mappers data source/zip   \
-                source/dswifi_arm9/ \
-                source/disk/    \
-                ../common/    \
-                ../common/dswifi/
-INCLUDES	:=	include/ \
-                ../include/ \
-                data/   \
-                source/nes/ \
-                source/disk  
+SOURCES		:=	source source/mappers data source/zip	source/dswifi_arm9
+INCLUDES	:=	include ../include data/ source/nes	source/dswifi_arm9
 DATA		:=
 
 
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
-ARCH	:=	#-marm -mthumb-interwork
+ARCH	:=	-marm -mthumb-interwork
 
-CFLAGS	:=	-Wall -O3 -DNO_VIZ\
+CFLAGS	:=	-Wall -O2 -DNO_VIZ\
  			-march=armv5te -mtune=arm946e-s -fomit-frame-pointer\
 			-ffast-math \
 			$(ARCH)
@@ -43,12 +35,12 @@ CXXFLAGS	:=	$(CFLAGS) -fno-rtti -fno-exceptions
 
 ASFLAGS	:=	$(ARCH) -march=armv5te -mtune=arm946e-s $(CFLAGS)
 
-LDFLAGS	=	-specs=dsi_arm9.specs $(ARCH) -Wl,-Map,$(notdir $*.map)
+LDFLAGS	=	-specs=ds_arm9.specs $(ARCH) -Wl,-Map,$(notdir $*.map)
 
 #---------------------------------------------------------------------------------
 # any extra libraries we wish to link with the project
 #---------------------------------------------------------------------------------
-LIBS	:=	-lfat -ldswifi9 -lnds9
+LIBS	:=	-lfat -lnds9 -ldswifi9
  
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
