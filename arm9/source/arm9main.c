@@ -18,7 +18,7 @@ void do_romebd()
 	freemem_start = ((u32)(&__bss_end__) + 3) & ~3;
 	freemem_end = 0x23D8000;
 	initcart(romebd_s);
-}	
+}
 #endif
 
 void showversion()
@@ -144,6 +144,7 @@ int main(int _argc, char **_argv) {
 		do_rommenu(); //show a menu selecting rom files.
 	}
 #else
+  joyflags|=B_A_SWAP; //"swap" A&B buttons to sane settings (e.g. A=A & B=B)
 	do_romebd();
 #endif
 
@@ -182,17 +183,17 @@ int main(int _argc, char **_argv) {
 				if(++__nsfsongno > nsfheader.TotalSong-1) {
 					__nsfsongno = 0;
 				}
-			}		
+			}
 			if(keydown & KEY_UP) {
 				__nsfplay = 1;
 				__nsfinit = 1;
-			}		
+			}
 			if(keydown & KEY_DOWN) {
 				__nsfplay = 0;
 				Sound_reset();
 			}
 		}
-			
+
 		do_shortcuts();
 		if((__emuflags & AUTOSRAM)) {
 			if(__emuflags & NEEDSRAM) {
@@ -209,11 +210,11 @@ int main(int _argc, char **_argv) {
 
 		touch_update(); // do menu functions.
 		do_menu();	//do control menu.
-	
+
 		do_multi();
 		if(nifi_stat == 0 || nifi_stat >= 5)
 			play(); //emulate a frame of the NES game.
-		else 
+		else
 			swiWaitForVBlank();
 	}
 }
@@ -252,7 +253,7 @@ void play() {
 
 	forward = __emuflags & FASTFORWARD;
 	backward = __emuflags & REWIND;
-	
+
 	if(backward) { // for rolling back... a nice function?
 		swiWaitForVBlank();
 		framecount++;
@@ -307,7 +308,7 @@ void play() {
 				swiWaitForVBlank();
 		}
 	}
-	
+
 	if(__emuflags & SOFTRENDER) {
 		__emuflags &= ~AUTOSRAM;
 		__rendercount++;
